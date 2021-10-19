@@ -1,29 +1,28 @@
-# openseespyvis
-A developmenet branch of OpenSeesPy Visualization commands. This can be used while waiting for the next release of OpenSeesPy.
-It is advisable to use the latest release of OpenSeesPy (once released) for stable functions.
+# vfo (Visualization For OpenSees)
+Python Commands to visualize OpenSees models and components.
 
 Install this package with,
 ```bash
-pip install openseespyvis
+pip install vfo
 ```
 
 Upgrade the package with,
 ```bash
-python -m pip install --upgrade openseespyvis
+python -m pip install --upgrade vfo
 ```
 
-To use this package, import the commands from **openseespyvis** instead of *openseespy.postprocessing*. For example,
+To use this package, import the commands from **vfo** instead of *openseespy.postprocessing*. For example,
 
 ```bash
 # import openseespy.postprocessing.Get_Rendering as opsplt
-import openseespyvis.Get_Rendering as opsplt
+import vfo.vfo as vfo
 ```
 
 Now, use all the openseespy visualization commands ([Here](https://openseespydoc.readthedocs.io/en/latest/src/plotcmds.html)). For example,
 
 ```bash
-opsplt.plot_model()
+vfo.plot_model()
 ```
 
 # USER MANUAL
-Check out the ([Wiki](https://github.com/u-anurag/openseespyvis/wiki)) for all the commands available in openseespyvis.
+Check out the ([Wiki](https://github.com/u-anurag/vfo/wiki)) for all the commands available in openseespyvis.
