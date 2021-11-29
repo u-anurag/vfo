@@ -1,4 +1,3 @@
-
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -9,15 +8,15 @@ setuptools.setup(
     version="0.0.1",
     author="anurag upadhyay",
     author_email="iitg.anurag@gmail.com",
-    description="A development package of openseespy visualization commands.",
+    description="A package for openseespy visualization.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/u-anurag/openseespyvis",
+    url="https://github.com/u-anurag/vfo",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
 )
