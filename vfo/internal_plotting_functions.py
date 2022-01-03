@@ -1,5 +1,6 @@
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
 
 import vfo.internal_database_functions as idbf 
@@ -156,6 +157,88 @@ def _plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, element, eleS
 
 	
 
+def _plotTri3D(iNode, jNode, kNode, ax, show_element_tags, element, eleStyle, fillSurface):
+	## procedure to render a 2D three node shell element. use eleStyle = "wire" for a wire frame, and "solid" for solid element lines.
+	## USe fillSurface = "yes" for color fill in the elements. fillSurface="no" for wireframe.
+							
+    ## Initialize varables for matplotlib objects
+	tempLines = [None]
+	tempSurface = [None]
+	tempTag = [None]
+    
+	tempLines, = plt.plot((iNode[0], jNode[0], kNode[0], iNode[0]),
+                         (iNode[1], jNode[1], kNode[1], iNode[1]),
+                         (iNode[2], jNode[2], kNode[2], iNode[2]), marker='')
+    
+	# update style
+	if eleStyle == "wire":
+		plt.setp(tempLines,**WireEle_style)
+	else:
+		plt.setp(tempLines,**ele_style)
+    
+	# x = [iNode[0],jNode[0],kNode[0]]
+	# y = [iNode[1],jNode[1],kNode[1]]
+	# z = [iNode[2],jNode[2],kNode[2]]
+	# verts = [list(zip(x,y,z))]
+	# ax.add_collection3d(Poly3DCollection(verts, facecolor='g', alpha=.25))
+
+	if fillSurface == 'yes':
+		tempSurface = ax.plot_surface(np.array([[iNode[0], kNode[0]], [jNode[0], kNode[0]]]), 
+								np.array([[iNode[1], kNode[1]], [jNode[1], kNode[1]]]),
+								np.array([[iNode[2], kNode[2]], [jNode[2], kNode[2]]]), color='g', alpha=.6)
+        
+	if show_element_tags == 'yes':
+		tempTag = ax.text((iNode[0] + jNode[0] + kNode[0])*1.0/3, (iNode[1]+jNode[1]+kNode[1])*1.0/3, 
+							(iNode[2]+jNode[2]+kNode[2])*1.0/3, str(element), **ele_text_style) #label elements
+	return tempLines, tempSurface, tempTag
+
+
+def _plotTetSurf(nodeCords, ax, fillSurface, eleStyle):
+	## This procedure is called by the plotCubeVol() command
+	aNode = nodeCords[0]
+	bNode = nodeCords[1]
+	cNode = nodeCords[2]
+    			
+	## Use arrays for less memory and fast code
+	surfXarray = np.array([[aNode[0], cNode[0]], [bNode[0], cNode[0]]])
+	surfYarray = np.array([[aNode[1], cNode[1]], [bNode[1], cNode[1]]])
+	surfZarray = np.array([[aNode[2], cNode[2]], [bNode[2], cNode[2]]])
+	
+	## Initialize varables for matplotlib objects
+	tempSurface = [None]
+
+	if fillSurface == 'yes':
+		tempSurface = ax.plot_surface(surfXarray, surfYarray, surfZarray, edgecolor='k', color='g', alpha=.5)
+    			
+	del aNode, bNode, cNode, surfXarray, surfYarray, surfZarray
+    
+	return tempSurface
+
+
+def _plotTetVol(iNode, jNode, kNode, lNode, ax, show_element_tags, element, eleStyle, fillSurface):
+	## procedure to render a cubic element, use eleStyle = "wire" for a wire frame, and "solid" for solid element lines.
+	## USe fillSurface = "yes" for color fill in the elements. fillSurface="no" for wireframe.
+	
+	tempSurfaces = 4*[None]
+	tempTag = [None]
+
+	# 2D Planer four-node shell elements
+	# [iNode, jNode, kNode, lNode,iiNode, jjNode, kkNode, llNode]  = [*nodesCords]
+  
+	tempSurfaces[0] = _plotTetSurf([iNode, jNode, kNode], ax, fillSurface, eleStyle)
+	tempSurfaces[1] = _plotTetSurf([iNode, jNode, lNode], ax, fillSurface, eleStyle)
+	tempSurfaces[2] = _plotTetSurf([iNode, kNode, lNode], ax, fillSurface, eleStyle)
+	tempSurfaces[3] = _plotTetSurf([jNode, kNode, lNode], ax, fillSurface, eleStyle)
+	
+	if show_element_tags == 'yes':
+		tempTag = ax.text((iNode[0]+jNode[0]+kNode[0]+lNode[0])/4, 
+							(iNode[1]+jNode[1]+kNode[1]+lNode[1])/4, 
+							(iNode[2]+jNode[2]+kNode[2]+lNode[2])/4, 
+							str(element), **ele_text_style) #label elements
+        
+	return tempSurfaces, tempTag
+	
+	
 
 def _checkEleLength2D(iNode,jNode):
 	eleLengthCheck = "ELE"

@@ -31,7 +31,9 @@ def _getNodesandElements():
 	# Check Number of dimensions and intialize variables
 	ndm = len(ops.nodeCoord(nodeList[0]))
 	Nnodes = len(nodeList)
+	Nele = len(eleList)
 	nodes = np.zeros([Nnodes, ndm + 1])
+	eleClassTags = np.zeros([Nele, 2])
     
 	# Get Node list
 	for ii, node in enumerate(nodeList):
@@ -40,6 +42,7 @@ def _getNodesandElements():
     
 	Nele = len(eleList)
 	elements = [None]*Nele
+	
     
 	# Generate the element list by looping through all emenemts
 	for ii, ele in enumerate(eleList):
@@ -51,9 +54,14 @@ def _getNodesandElements():
 		tempEle[0] = int(ele)
 		tempEle[1:] = tempNodes
         
-		elements[ii] = tempEle       
+		elements[ii] = tempEle     
+
+	# Generate element class tags by looping through all elements
+	for ii, ele in enumerate(eleList):
+		eleClassTags[ii,0] = ele
+		eleClassTags[ii,1] = ops.getEleClassTags(ele)[0]
     
-	return nodes, elements
+	return nodes, elements, eleClassTags
 
 def _saveNodesandElements(ModelName):
 	"""   
@@ -81,6 +89,7 @@ def _saveNodesandElements(ModelName):
 	# Consider making these optional arguements
 	nodeName = 'Nodes'
 	eleName = 'Elements'
+	eleClassName = 'EleClassTags'
 	delim = ' '
 	fmt = '%.5e'
 	ftype = '.out'
@@ -88,7 +97,7 @@ def _saveNodesandElements(ModelName):
 	ODBdir = ModelName+"_ODB"		# ODB Dir name
 
 	# Read noades and elements
-	nodes, elements = _getNodesandElements()
+	nodes, elements, eleClassTags = _getNodesandElements()
 
 	# Sort through the element arrays
 	ele2Node = np.array([ele for ele in elements if len(ele) == 3])
@@ -103,6 +112,8 @@ def _saveNodesandElements(ModelName):
 	ele3File = os.path.join(ODBdir, eleName + "_3Node" + ftype)
 	ele4File = os.path.join(ODBdir, eleName + "_4Node"  + ftype)
 	ele8File = os.path.join(ODBdir, eleName + "_8Node"  + ftype)
+	
+	eleClassTagsFile = os.path.join(ODBdir, eleClassName + ftype)
 
 	# SaveNodes
 	np.savetxt(nodeFile, nodes, delimiter = delim, fmt = fmt)
@@ -112,6 +123,9 @@ def _saveNodesandElements(ModelName):
 	np.savetxt(ele3File, ele3Node, delimiter = delim, fmt = fmt)
 	np.savetxt(ele4File, ele4Node, delimiter = delim, fmt = fmt)
 	np.savetxt(ele8File, ele8Node, delimiter = delim, fmt = fmt)
+	
+	# Save Element Class Tags
+	np.savetxt(eleClassTagsFile, eleClassTags, delimiter = delim, fmt = fmt)
 
 
 def _readNodesandElements(ModelName):
@@ -144,6 +158,7 @@ def _readNodesandElements(ModelName):
 	# Consider making these optional arguements
 	nodeName = 'Nodes'
 	eleName = 'Elements'
+	eleClassName = 'EleClassTags'
 	delim = ' '
 	dtype ='float32' 
 	ftype = '.out'
@@ -162,6 +177,8 @@ def _readNodesandElements(ModelName):
 	ele8File = os.path.join(ODBdir, eleName + "_8Node"  + ftype)     
        
 	eleFileNames = [ele2File, ele3File, ele4File, ele8File]    
+	
+	eleClassTagsFile = os.path.join(ODBdir, eleClassName + ftype)
     
 	## Load Node information
 	try:
@@ -187,11 +204,17 @@ def _readNodesandElements(ModelName):
 	# define the final element array
 	elements = [*TempEle[0],*TempEle[1],*TempEle[2],*TempEle[3]]
 
+	## Load Element Class Tags information
+	try:
+		eleClassTags = np.loadtxt(eleClassTagsFile, dtype, delimiter = delim, unpack=False)
+	except:
+		print("No element class tag information was found")
+	
 	# Check if any files were read
 	if elements is []:
-		raise Exception('No files were found!')
+		raise Exception('No element information files were found!')
 
-	return nodes, elements
+	return nodes, elements, eleClassTags
 	
 	
 ################ ModeShapes #############################

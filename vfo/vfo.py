@@ -24,6 +24,7 @@ for line in range(0,len(sys.argv)):
         pass
 
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from math import asin
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,6 +34,7 @@ from matplotlib.widgets import Slider
 
 
 #### CHANGE THESE BEFORE COMMITTING, call them before calling openseespy here ####
+import vfo.classTags as classTags
 import vfo.internal_database_functions as idbf
 import vfo.internal_plotting_functions as ipltf
 import openseespy.opensees as ops
@@ -278,18 +280,22 @@ def plot_model(*argv,Model="none"):
 	if Model == "none":
 		print("No Model_ODB specified, trying to get data from the active model.")
 		try:
-			nodeArray, elementArray = idbf._getNodesandElements()
+			nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
 		except:
 			raise Exception("No Model_ODB specified. No active model found.")
 	else:
 		print("Reading data from the "+Model+"_ODB.")
 		try:
-			nodeArray, elementArray = idbf._readNodesandElements(Model)
+			nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model) ## Add eleClassTags to the Tcl data
 		except:
 			raise Exception("No Model_ODB found. No active model found.")
 		
 	nodetags = nodeArray[:,0]
 	
+	# print(nodeArray)
+	# print(elementArray)
+	# print(eleClassTags)
+	# print(eleClassTags[:,1])
 	
 	def nodecoords(nodetag):
 		"""
@@ -297,6 +303,13 @@ def plot_model(*argv,Model="none"):
 		"""
 		i, = np.where(nodeArray[:,0] == float(nodetag))
 		return nodeArray[int(i),1:]
+		
+	def _eleClassTag(eleTag):
+		"""
+		Returns element class tag
+		"""
+		i, = np.where(eleClassTags[:,0] == float(eleTag))
+		return eleClassTags[i,1]
 
 	# Check if the model is 2D or 3D
 	if len(nodecoords(nodetags[0])) == 2:
@@ -324,11 +337,19 @@ def plot_model(*argv,Model="none"):
 				ipltf._plotTri2D(iNode, jNode, kNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
 						
 			if len(Nodes) == 4:
-				# 2D Planer four-node shell elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
+				if _eleClassTag(eleTag) in classTags.MVLEMEleTags:
+					# 2D Planer four-node shell elements
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[3])
+					lNode = nodecoords(Nodes[2])
+					
+				else:
+					## 2D Planer four-node shell elements
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[2])
+					lNode = nodecoords(Nodes[3])
 				
 				ipltf._plotQuad2D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
 
@@ -359,14 +380,43 @@ def plot_model(*argv,Model="none"):
 				
 				ipltf._plotBeam3D(iNode, jNode, ax, show_element_tags, eleTag, "solid")
 				
-			if len(Nodes) == 4:
-				# 3D four-node Quad/shell element
+			if len(Nodes) == 3:
+				# 3D Planer three-node shell elements
 				iNode = nodecoords(Nodes[0])
 				jNode = nodecoords(Nodes[1])
 				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
 				
-				ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
+				ipltf._plotTri3D(iNode, jNode, kNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
+				
+			if len(Nodes) == 4:
+				if _eleClassTag(eleTag) in classTags.MVLEMEleTags:
+					## 3D four-node Quad/shell element
+					## Reverse the node connectivity for MVLEM3D elements
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[3])
+					lNode = nodecoords(Nodes[2])
+					
+					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
+				
+				elif _eleClassTag(eleTag) in classTags.fourNodeEleTags:
+					## 3D Planer four-node shell elements
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[2])
+					lNode = nodecoords(Nodes[3])
+				
+					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
+				
+				elif _eleClassTag(eleTag) in classTags.tetEleTags:
+					## If the element is a four-node tetrahedron
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[2])
+					lNode = nodecoords(Nodes[3])
+					
+					ipltf._plotTetVol(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, 'solid', fillSurface='yes')
+					
 				
 			if len(Nodes) == 8:
 				# 3D eight-node Brick element
