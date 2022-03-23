@@ -25,4 +25,4 @@ vfo.plot_model()
 ```
 
 # USER MANUAL
-Check out the ([Wiki](https://github.com/u-anurag/vfo/wiki)) for all the commands available in openseespyvis.
+A detailed list of all the latest commands will be added soon to the wiki page ([Wiki](https://github.com/u-anurag/vfo/wiki)).
