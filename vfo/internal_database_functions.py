@@ -295,7 +295,7 @@ def _readNodeDispData(ModelName,LoadCaseName):
 	LoadCaseDir = os.path.join(ODBdir, LoadCaseName)
 	
 	# Get number of nodes in the model to set a node displacement array
-	nodes,elements, eleclass = _readNodesandElements(ModelName)
+	nodes,elements, eleClassTags = _readNodesandElements(ModelName)
 	Nnodes = len(nodes)
 	ndm = len(nodes[0,1:])
 	
