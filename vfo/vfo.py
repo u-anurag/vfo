@@ -143,8 +143,8 @@ def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="no
 # 		EleIntPointsFile = os.path.join(LoadCaseDir,"EleIntPoints_All.out")	
 
 		# Save recorders in the ODB folder
-		ops.recorder('Node', '-file', NodeDispFile,  '-time', '-dT', deltaT, '-closeOnWrite', '-node', *nodeList, '-dof',*dofList_node, 'disp')
-		ops.recorder('Node', '-file', ReactionFile,  '-time', '-dT', deltaT, '-closeOnWrite', '-node', *nodeList, '-dof',*dofList_node, 'reaction')
+		ops.recorder('Node', '-file', NodeDispFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'disp')
+		ops.recorder('Node', '-file', ReactionFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'reaction')
 
 		if len(monitorEleTags)>0:
 			# Recording monitor tags
