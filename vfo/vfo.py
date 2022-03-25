@@ -145,7 +145,7 @@ def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="no
 		# Save recorders in the ODB folder
 		ops.recorder('Node', '-file', NodeDispFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'disp')
 		ops.recorder('Node', '-file', ReactionFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'reaction')
-		
+
 		if len(monitorEleTags)>0:
 			# Recording monitor tags
 			if monitorGroupName =="none" or monitorOutput =="none":
@@ -179,7 +179,7 @@ def readODB(*argv):
 	ODBdir = ModelName+"_ODB"		# ODB Dir name
 
 	# Read node and element data in the main Output folder
-	nodes, elements = idbf._readNodesandElements(ModelName)
+	nodes, elements, eleClassTags = idbf._readNodesandElements(ModelName)
 	
 	if len(argv)>=2:
 		LoadCaseName = argv[1]
@@ -471,12 +471,12 @@ def plot_modeshape(*argv,overlap="yes",Model="none"):
 		ops.wipeAnalysis()
 		eigenVal = ops.eigen(modeNumber+1)
 		Tn=4*asin(1.0)/(eigenVal[modeNumber-1])**0.5
-		nodeArray, elementArray = idbf._getNodesandElements()
+		nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
 		Mode_nodeArray = idbf._getModeShapeData(modeNumber)		# DOES NOT GIVE MODAL PERIOD
 		ops.wipeAnalysis()
 	else:
 		print("Reading modeshape data from "+str(Model)+"_ODB")
-		nodeArray, elementArray = idbf._readNodesandElements(Model)
+		nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model)
 		Mode_nodeArray, Periods = idbf._readModeShapeData(Model,modeNumber)
 		Tn = Periods[modeNumber-1]
 				
@@ -689,7 +689,7 @@ def plot_deformedshape(Model="none", LoadCase="none", tstep = -1, scale = 10, ov
 		
 	else:
 		print("Reading displacement data from "+str(Model)+"_ODB/"+LoadCase)
-		nodeArray, elementArray = idbf._readNodesandElements(Model)
+		nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model)
 		timeSteps, Disp_nodeArray = idbf._readNodeDispData(Model,LoadCase)
 		
 		if tstep == -1:
@@ -1003,7 +1003,7 @@ def animate_deformedshape( Model = 'none', LoadCase = 'none', dt = 0, tStart = 0
     #TODO error handeling?
     time, Disp = idbf._readNodeDispData(Model,LoadCase)
     
-    nodes, elements = idbf._readNodesandElements(Model)
+    nodes, elements, eleClassTags = idbf._readNodesandElements(Model)
     Disp = Disp*scale
     
     # Reshape array
@@ -1560,7 +1560,7 @@ def plot_eleHysteresis(Model="none", LoadCase="none", element=[], monitorGroupNa
 		
 	else:
 		print("Reading data from "+str(Model)+"_ODB/"+LoadCase)
-		nodeArray, elementArray = idbf._readNodesandElements(Model)
+		nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model)
 		timeSteps, Disp_nodeArray = idbf._readNodeDispData(Model,LoadCase)
 		
 	
