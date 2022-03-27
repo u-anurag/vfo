@@ -1,7 +1,9 @@
-.. image:: https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png
-   :alt: vfo
-
+***
 # vfo (Visualization For OpenSees)
+***
+ 
+![vfo](https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png)
+   
 Python Commands to visualize OpenSees models and components.
 
 Install this package with,
