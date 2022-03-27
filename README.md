@@ -1,3 +1,6 @@
+.. image:: https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png
+   :alt: vfo
+
 # vfo (Visualization For OpenSees)
 Python Commands to visualize OpenSees models and components.
 
@@ -11,10 +14,9 @@ Upgrade the package with,
 python -m pip install --upgrade vfo
 ```
 
-To use this package, import the commands from **vfo** instead of *openseespy.postprocessing*. For example,
+To use this package, import the commands from *vfo*. For example,
 
 ```bash
-# import openseespy.postprocessing.Get_Rendering as opsplt
 import vfo.vfo as vfo
 ```
 
