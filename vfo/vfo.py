@@ -145,7 +145,7 @@ def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="no
 		# Save recorders in the ODB folder
 		ops.recorder('Node', '-file', NodeDispFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'disp')
 		ops.recorder('Node', '-file', ReactionFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'reaction')
-
+		
 		if len(monitorEleTags)>0:
 			# Recording monitor tags
 			if monitorGroupName =="none" or monitorOutput =="none":
@@ -399,15 +399,6 @@ def plot_model(*argv,Model="none"):
 					
 					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
 				
-				elif _eleClassTag(eleTag) in classTags.fourNodeEleTags:
-					## 3D Planer four-node shell elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-				
-					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-				
 				elif _eleClassTag(eleTag) in classTags.tetEleTags:
 					## If the element is a four-node tetrahedron
 					iNode = nodecoords(Nodes[0])
@@ -416,7 +407,17 @@ def plot_model(*argv,Model="none"):
 					lNode = nodecoords(Nodes[3])
 					
 					ipltf._plotTetVol(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, 'solid', fillSurface='yes')
-					
+				
+				
+				# elif _eleClassTag(eleTag) in classTags.fourNodeEleTags:			## USE THIS SELECTION WHEN OPENSEES 3.4.0 IS RELEASED IN BINARY - ANU
+				else:
+					## 3D Planer four-node shell elements
+					iNode = nodecoords(Nodes[0])
+					jNode = nodecoords(Nodes[1])
+					kNode = nodecoords(Nodes[2])
+					lNode = nodecoords(Nodes[3])
+				
+					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
 				
 			if len(Nodes) == 8:
 				# 3D eight-node Brick element
@@ -1048,6 +1049,9 @@ def animate_deformedshape( Model = 'none', LoadCase = 'none', dt = 0, tStart = 0
         [EqfigLines, EqfigSurfaces, EqfigText] = EQObjects 
         EqfigNodes, = ax.plot(Disp[0,:,0], Disp[0,:,1], Disp[0,:,2], **node_style_animation)  
 
+
+    print("EqfigNodes", EqfigNodes)  # Test
+	
     # ========================================================================
     # Animation
     # ========================================================================
