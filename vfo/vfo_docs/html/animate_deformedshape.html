@@ -1,0 +1,296 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>animate_deformedshape command &mdash; vfo 0.0.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="animate_fiberResponse2D command" href="animate_fiberResponse2D.html" />
+    <link rel="prev" title="plot_fiberResponse2D command" href="plot_fiberResponse2D.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> vfo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.0.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="createODB.html">Create Output Database</a></li>
+<li class="toctree-l1"><a class="reference internal" href="saveFiberData2D.html">saveFiberData2D command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_model.html">plot_model command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_modeshape.html">plot_modeshape command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_deformedshape.html">plot_deformedshape command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_fiberResponse2D.html">plot_fiberResponse2D command</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">animate_deformedshape command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="animate_fiberResponse2D.html">animate_fiberResponse2D command</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plotting_OpenSeesTcl.html">Plotting OpenSees Tcl Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Plotting_Development_Guide.html">Visualization Development Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#internal-database-functions">Internal Database functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#internal-plotting-functions">Internal Plotting functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#user-functions">User functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#example-of-an-internal-function">Example of an internal function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#naming-conventions">Naming conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Plotting_Development_Guide.html#wish-list">Wish List</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">vfo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>animate_deformedshape command</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/animate_deformedshape.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="animate-deformedshape-command">
+<h1>animate_deformedshape command<a class="headerlink" href="#animate-deformedshape-command" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt>
+<code class="sig-name descname">vfo.animate_deformedshape(Model='ModelName', LoadCase='LoadCaseName',</code></dt>
+<dt>
+<code class="sig-name descname">dt = dT, &lt;tStart = 0&gt;, &lt;tEnd = 0&gt;, &lt;scale = 10&gt;, fps = 24, FrameInterval = 0,</code></dt>
+<dt>
+<code class="sig-name descname">timeScale = 1, Movie='none')</code></dt>
+<dd><p>Displays an animation of the deformed structure by reading data from a saved output database.
+The animation object should be stored as an variable in order for the animation to run.
+The input file should have approximately the same number of time between each step or the animation will appear to speed up or slow down.
+The time step for the input data can be controlled by passing the a recorder time step.</p>
+<p>For many larger models, the runtime of the code for each frame likely be larger than the frame interval, this will result in the animation running slower than the target fps.
+<strong>ffmpeg</strong> codecs are required to save the animation as a movie (.mp4).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModelName</span></code>    (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>)</p></td>
+<td><p>Name of the model to read data from output database, created with <cite>createODB()</cite> command.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LoadCaseName</span></code> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>)</p></td>
+<td><p>Name of the subfolder with load case output data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dT</span></code>        (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float">float</a>)</p></td>
+<td><p>The time step between frames in the input file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tStart</span></code>    (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float">float</a>)</p></td>
+<td><p>The start time for animation. It can be approximate value and the program will find the closest matching time step. (optional, default is 0)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tEnd</span></code>      (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float">float</a>)</p></td>
+<td><p>The end time for animation. It can be approximate value and the program will find the closest matching time step. (optional, default is last step)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scale</span></code> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int">int</a>)</p></td>
+<td><p>Scale factor for to display mode shape. (optional, default is 10)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fps</span></code> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int">int</a>)</p></td>
+<td><p>The target frames per second to be displayed. (optional, The default is 24)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FrameInterval</span></code> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int">int</a>)</p></td>
+<td><p>The time interval between frames to be used. Used to update at intervals different than 1/fps. The default is 0. (optional)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">timeScale</span></code> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int">int</a>)</p></td>
+<td><p>A scale factor that increase or decrease the time between animation frames. Will not improve results if the animation speed is governed by performance limited.(optional, default is 1)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Movie</span></code> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>)</p></td>
+<td><p>Name of the movie file in the <cite>LoadCadeName</cite> folder if the user wants to save the animation as .mp4 file. (optional, default is “none”)</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Examples:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/-inY2aDcT4c" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ani</span> <span class="o">=</span> <span class="n">vfo</span><span class="o">.</span><span class="n">animate_deformedshape</span><span class="p">(</span><span class="n">Model</span><span class="o">=</span><span class="s2">&quot;TwoSpan_Bridge&quot;</span><span class="p">,</span> <span class="n">LoadCase</span><span class="o">=</span><span class="s2">&quot;Dynamic_GM1&quot;</span><span class="p">,</span> <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above command animates the deformedshape of structure by reading data from <cite>TwoSpan_Bridge_ODB</cite> with a sub-folder <cite>Dynamic_GM1</cite> at dt=0.01.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ani</span> <span class="o">=</span> <span class="n">vfo</span><span class="o">.</span><span class="n">animate_deformedshape</span><span class="p">(</span><span class="n">Model</span><span class="o">=</span><span class="s2">&quot;TwoSpan_Bridge&quot;</span><span class="p">,</span> <span class="n">LoadCase</span><span class="o">=</span><span class="s2">&quot;Dynamic_GM1&quot;</span><span class="p">,</span>  <span class="n">dt</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">tStart</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">tEnd</span><span class="o">=</span><span class="mf">20.0</span><span class="p">,</span>
+                                                                      <span class="n">scale</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">Movie</span><span class="o">=</span><span class="s2">&quot;Bridge_Dynamic&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The above command animates the deformedshape of structure by reading data from <cite>TwoSpan_Bridge_ODB</cite> with a sub-folder <cite>Dynamic_GM1</cite> at dt=0.01, starting at t=10.0 s and ending at t=20.0 s of the earthquake input, using a scale factor of 50. The animation movie will be saved as <cite>Bridge_Dynamic.mp4</cite> in the <cite>Dynamic_GM1</cite> sub-folder.</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="animate_fiberResponse2D.html" class="btn btn-neutral float-right" title="animate_fiberResponse2D command" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="plot_fiberResponse2D.html" class="btn btn-neutral float-left" title="plot_fiberResponse2D command" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2022, Anurag Upadhyay
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(false);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
