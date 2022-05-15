@@ -43,5 +43,6 @@ vfo.plot_model()
 
 # USER MANUAL
 
-Documentation for *vfo* can be found here: ([vfo-docs](https://vfo.readthedocs.io/en/latest/index.html))
+Documentation for *vfo* can be found here: ([vfo-docs](https://vfo.readthedocs.io/en/latest/index.html)). 
+
 A detailed list of all the latest commands will be added soon to the wiki page ([Wiki](https://github.com/u-anurag/vfo/wiki)).
