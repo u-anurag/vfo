@@ -3,7 +3,16 @@
 ***
  
 ![vfo](https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png)
-   
+  
+  
+***
+[![PyPI version fury.io](https://badge.fury.io/py/vfo.svg)](https://pypi.org/project/vfo/)
+[![Downloads](https://pepy.tech/badge/vfo)](https://pepy.tech/project/vfo)
+[![Downloads](https://pepy.tech/badge/vfo/month)](https://pepy.tech/project/vfo)
+[![Downloads](https://pepy.tech/badge/vfo/week)](https://pepy.tech/project/vfo)
+***
+
+
 vfo (Visualization for OpenSees) is a Python package to make your life better by helping you visualize your OpenSees models, Python or Tcl. It utilizes Matplotlib 3.0 library to plot 2D and 3D models in a dedicated interactive window. You can use click-and-hold to change the view angle and zoom the plot. The model image can be saved with the desired orientation directly from the interactive plot window. If you did not install matplotlib using Anaconda, you will have to install PyQt or PySide to enable an interactive window (Matplotlib Dependencies).
 
 #### Animation: To save the animation movie as .mp4 file, FFmpeg codecs are required.
