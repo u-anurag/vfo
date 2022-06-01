@@ -1,0 +1,16 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: vfo (Visualization For OpenSees)
+message: >-
+  If you have used this tool for your research,
+  please support the work by citing it using the
+  metadata in this file.
+type: software
+authors:
+  - given-names: Anurag
+    family-names: Upadhyay
+    email: iitg.anurag@gmail.com
+    affiliation: Magnusson Klemencic Associates
+    orcid: 'https://orcid.org/0000-0001-9525-5062'
