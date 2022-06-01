@@ -7,6 +7,9 @@ message: >-
   If you have used this tool for your research,
   please support the work by citing it using the
   metadata in this file.
+repository-code: "https://github.com/u-anurag/vfo"
+version: 0.0.5
+license: MIT
 type: software
 authors:
   - given-names: Anurag
@@ -14,4 +17,4 @@ authors:
     email: iitg.anurag@gmail.com
     affiliation: Magnusson Klemencic Associates
     orcid: 'https://orcid.org/0000-0001-9525-5062'
-    website: "https://github.com/u-anurag/vfo"
+    website: "https://anuragupadhyay.weebly.com/"
