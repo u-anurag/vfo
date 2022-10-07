@@ -23,12 +23,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pyvista as pv
 
-import classTags as classTags
-import internal_database_functions as idbf
-import internal_plotting_functions as ipltf
-import openseespy.opensees as ops
-
-
 for line in range(0,len(sys.argv)):
     if "ipykernel_launcher.py" in sys.argv[line]:
         # matplotlib.use('nbagg')
