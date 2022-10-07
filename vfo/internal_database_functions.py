@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import warnings
+import vfo.classTags as classTags
 import openseespy.opensees as ops
 
 
@@ -104,7 +105,6 @@ def _saveNodesandElements(ModelName):
 	ele3Node = np.array([ele for ele in elements if len(ele) == 4])
 	ele4Node = np.array([ele for ele in elements if len(ele) == 5])
 	ele8Node = np.array([ele for ele in elements if len(ele) == 9])
-
     
 	nodeFile = os.path.join(ODBdir, nodeName + ftype)
     
@@ -126,6 +126,8 @@ def _saveNodesandElements(ModelName):
 	
 	# Save Element Class Tags
 	np.savetxt(eleClassTagsFile, eleClassTags, delimiter = delim, fmt = fmt)
+	
+
 
 
 def _readNodesandElements(ModelName):
@@ -216,6 +218,24 @@ def _readNodesandElements(ModelName):
 
 	return nodes, elements, eleClassTags
 	
+
+################ Element lists for stress and strain ###########
+
+def _getEleListforStress():
+	
+	# Sort through element array and create groups for stress and strain recorder 
+	# Since this saveNodesandElements command is called in createODB before recorders, these lists can be saved in the ODB and also used for recorders. 
+	# return shell_4N4GP_eleList , etc.
+	## FUTURE: Also save element information for beam-column elements for element force and fiber recorder
+	
+	eleList = ops.getEleTags()  
+	
+	eleList_shell_4N4GP = [ele for ele in eleList if ops.getEleClassTags(ele)[0] in classTags.shell_4N4GP_EleTags]
+	eleList_shell_3N3GP = [ele for ele in eleList if ops.getEleClassTags(ele)[0] in classTags.shell_3N3GP_EleTags]
+	eleList_tetra_4N4GP = [ele for ele in eleList if ops.getEleClassTags(ele)[0] in classTags.tetra_4N4GP_EleTags]
+	eleList_brick_8N8GP = [ele for ele in eleList if ops.getEleClassTags(ele)[0] in classTags.brick_8N8GP_EleTags]
+	
+	return eleList_shell_4N4GP, eleList_shell_3N3GP, eleList_tetra_4N4GP, eleList_brick_8N8GP
 	
 ################ ModeShapes #############################
 
@@ -340,6 +360,41 @@ def _readFiberData2D(ModelName, LoadCaseName, eleNumber, sectionNumber):
 	FiberData = FiberData[:,1:]
 
 	return timeSteps, FiberData
+
+
+
+def _getMaxNodeDisp(timeSteps, displacement_nodeArray):
+	
+	"""
+	This internal function calculates the absolute maximum deformation of nodes in a model. 
+	The output is used in creating animation with contours.
+	
+	Do not use scale factor for these calculations. Use "scale" option from PyVista.
+	
+	"""
+	print("calculating maximum node deflections")
+	
+	jj=0
+	
+	maxDispArray = np.empty([len(timeSteps), 7])  # Each row of this array will store [jj, min_X, max_x, min_y, max_y, min_z, max_z]
+	
+	
+	for jj, tstep in enumerate(timeSteps):
+		x_max = np.max(displacement_nodeArray[jj,:,0])
+		x_min = np.min(displacement_nodeArray[jj,:,0])
+		y_max = np.max(displacement_nodeArray[jj,:,1])
+		y_min = np.min(displacement_nodeArray[jj,:,1])
+		z_max = np.max(displacement_nodeArray[jj,:,2])
+		z_min = np.min(displacement_nodeArray[jj,:,2])
+		
+		thisArray = np.array([jj, x_max, x_min, y_max, y_min, z_max, z_min])
+		maxDispArray[jj,:] = thisArray
+		
+		# print(jj)
+
+	return maxDispArray
+
+
 
 
 def _saveMonitorElementData(monitorEleType, monitorOutput, GroupMonitorDir, monitorEleTags, deltaT, dofList_ele):
@@ -478,3 +533,64 @@ def _elementHysteresis(eleTag, dof, MonitorEleInfo, MonitorEleTags, MonitorEleDe
 	return eleDeformation, eleForce
 
 						
+def _readShellStressData(ModelName,LoadCaseName):
+	
+	"""
+	"""	
+	
+	ODBdir = ModelName+"_ODB"		# ODB Dir name
+	LoadCaseDir = os.path.join(ODBdir, LoadCaseName)
+	
+	# Get number of nodes in the model to set a node displacement array
+	nodes,elements, eleClassTags = _readNodesandElements(ModelName)
+	Nnodes = len(nodes)
+	ndm = len(nodes[0,1:])
+	
+	# Read shell element tags saved in ODB
+	
+	Elements_shell_4N4GP = os.path.join(ODBdir, "Elements_shell_4N4GP.out")
+	
+	if len(Elements_shell_4N4GP)>0:
+		"""
+		Read 4Node 4GP shell data if exists
+		extrapolate stress from GP to nodes
+		Calculate average stress at each node from elements
+		Save node stress data for plotting
+		"""
+		
+		EleStressFile_shell_4N4GP = os.path.join(LoadCaseDir,"EleStress_shell_4N4GP.out")
+		GPstress_shell_4N4GP = np.transpose(np.loadtxt(EleStressFile_shell_4N4GP, dtype=float, delimiter=None, converters=None, unpack=True))
+		
+		t_row = 0 # get this dynamically from tstep input 
+		ii=0
+		for ii, ele in enumerate(Elements_shell_4N4GP):
+			##### initialize a 2D array to store GP stress data for matrix calcs
+			_thisGPstress = np.zeros([4,32])
+			_thisGPstress = np.array([[GPstress_shell_4N4GP[t_row, 1:9+ii]],
+										[GPstress_shell_4N4GP[t_row, 10+ii:18+ii]],
+										[GPstress_shell_4N4GP[t_row, 19+ii:27+ii]],
+										[GPstress_shell_4N4GP[t_row, 28+ii:36+ii]]])		
+	
+	
+	
+	# each element has 3 stress vectors
+	# create a [Nnodes x Nele] array to store node stress from each element 
+	# Each row is for a node. Store stress from element j at node i in the array location ij
+	
+	nodeStressArray = np.zeros([Nnodes,Nele])
+	
+	
+	
+	timeSteps = Disp[:,0]
+	Ntime = len(Disp[:,0])
+
+	tempDisp = np.zeros([Ntime,Nnodes,ndm])
+	tempDisp[:,:,0] = Disp[:,1::ndm]
+	tempDisp[:,:,1] = Disp[:,2::ndm]
+	
+	if ndm == 3:
+		tempDisp[:,:,2] = Disp[:,3::ndm]
+		
+	nodes_displacement = tempDisp
+	
+	return timeSteps, nodes_displacement

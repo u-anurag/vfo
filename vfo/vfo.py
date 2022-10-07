@@ -12,22 +12,33 @@
 
 # Check if the script is executed on Jupyter Notebook Ipython. 
 # If yes, force inline, interactive backend for Matplotlib.
+
 import sys
 import os
 import matplotlib
+import math
+
+from math import asin
+import matplotlib.pyplot as plt
+import numpy as np
+import pyvista as pv
+
+import classTags as classTags
+import internal_database_functions as idbf
+import internal_plotting_functions as ipltf
+import openseespy.opensees as ops
+
 
 for line in range(0,len(sys.argv)):
     if "ipykernel_launcher.py" in sys.argv[line]:
-        matplotlib.use('nbagg')
+        # matplotlib.use('nbagg')
+        pv.set_jupyter_backend('panel')
         break
     else:
         pass
 
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from math import asin
-import matplotlib.pyplot as plt
-import numpy as np
 
 import matplotlib.animation as animation
 from matplotlib.widgets import Slider
@@ -44,50 +55,54 @@ import openseespy.opensees as ops
 ####
 #####################################################################
 
-def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="none", numSections=1, monitorGroupName="none", monitorOutput="none", dofs=[]):
+def createODB(model=None,loadcase=None, Nmodes=0, deltaT=0.0):
 	
 	"""
 	This function creates a directory to save all the output data.
 
-	Command: createODB("ModelName",<"LoadCase Name">, <Nmodes=Nmodes(int)>, <recorders=*recorder(list)>)
+	Command: createODB(model="ModelName",<loadcase="LoadCase Name">, <Nmodes=Nmodes>, <recorders=*recorder>)
 	
 	PARAMETERS
 	-----------
 	
-	ModelName    : (string) 
+	model    : (string) 
 		Name of the model. The main output folder will be named "ModelName_ODB" in the current directory.
 		
-	LoadCase Name: (string), Optional. 
+	loadcase : (string), Optional. 
 		Name of the load case forder to be created inside the ModelName_ODB folder. If not provided,
 					no load case data will be read.
 					
-	Nmodes		 : (int) Optional 
+	Nmodes	 : (int) Optional 
 		key argument to save modeshape data. Default is 0, no modeshape data is saved.
 	
-	deltaT		 : (float) Optional 
+	deltaT	 : (float) Optional 
 		time interval for recording. will record when next step is deltaT greater than last recorder step. 
 					(default: records at every time step)
 	
-	recorders	 : (string) 
+	recorders	: (string) Optional
 		A list of additional quantities a users would like to record in the output database.
 					The arguments for these additional inputs match the standard OpenSees arguments to avoid any confusion.
 					'localForce','basicDeformation', 'plasticDeformation','stresses','strains'
 					The recorders for node displacement and reactions are saved by default to help plot the deformed shape.
 	
-	Example: createODB(TwoSpanBridge, Pushover, Nmodes=3, recorders=['stresses', 'strains'])
+	Example: createODB(model="TwoSpanBridge", loadcase="Pushover", Nmodes=3, recorders=['stresses', 'strains'])
 	
 	Future: The integrationPoints output works only for nonlinear beam column elements. If a model has a combination 
 			of elastic and nonlienar elements, we need to create a method distinguish. 
 	
 	"""
 	
-	ModelName = argv[0]
+	ModelName = model
 	ODBdir = ModelName+"_ODB"		# ODB Dir name
 	if not os.path.exists(ODBdir):
 			os.makedirs(ODBdir)
 
 	nodeList = ops.getNodeTags()
 	eleList = ops.getEleTags()
+	
+	## get individual lists of elements for stress and strain recorder 
+	# for ele in eleList:
+		
 	
 	if len(ops.nodeCoord(nodeList[0])) == 2:
 		dofList_node = [1, 2]
@@ -126,18 +141,43 @@ def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="no
 		
 	# Define standard outout filenames			
 		
-	if len(argv)>=2:
-		LoadCaseName = argv[1]
+	if loadcase is not None:
+		LoadCaseName = loadcase
 		LoadCaseDir = os.path.join(ODBdir,LoadCaseName)
 
 		if not os.path.exists(LoadCaseDir):
 			os.makedirs(LoadCaseDir)
 			
+		eleList_shell_4N4GP, eleList_shell_3N3GP, eleList_tetra_4N4GP, eleList_brick_8N8GP = idbf._getEleListforStress()
+		
+		delim = ' '
+		dtype ='float32' 
+		ftype = '.out'
+		fmt = '%.5e'
+		
+		ele_shell_4N4GP_File = os.path.join(ODBdir, 'Elements' + "_shell_4N4GP" + ftype)
+		ele_shell_3N3GP_File = os.path.join(ODBdir, 'Elements' + "_shell_3N3GP" + ftype)
+		ele_tetra_4N4GP_File = os.path.join(ODBdir, 'Elements' + "_tetra_4N4GP" + ftype)
+		ele_brick_8N8GP_File = os.path.join(ODBdir, 'Elements' + "_brick_8N8GP" + ftype)
+		
+		# Save element arrays for stress and recorder
+		np.savetxt(ele_shell_4N4GP_File, eleList_shell_4N4GP, delimiter = delim, fmt = fmt)
+		np.savetxt(ele_shell_3N3GP_File, eleList_shell_3N3GP, delimiter = delim, fmt = fmt)
+		np.savetxt(ele_tetra_4N4GP_File, eleList_tetra_4N4GP, delimiter = delim, fmt = fmt)
+		np.savetxt(ele_brick_8N8GP_File, eleList_brick_8N8GP, delimiter = delim, fmt = fmt)
+	
+		
 		NodeDispFile = os.path.join(LoadCaseDir,"NodeDisp_All.out")
 		EleForceFile = os.path.join(LoadCaseDir,"EleForce_All.out")
 		ReactionFile = os.path.join(LoadCaseDir,"Reaction_All.out")
-		EleStressFile = os.path.join(LoadCaseDir,"EleStress_All.out")
-		EleStrainFile = os.path.join(LoadCaseDir,"EleStrain_All.out")
+		EleStressFile_shell_4N4GP = os.path.join(LoadCaseDir,"EleStress_shell_4N4GP.out")
+		EleStrainFile_shell_4N4GP = os.path.join(LoadCaseDir,"EleStrain_shell_4N4GP.out")
+		EleStressFile_shell_3N3GP = os.path.join(LoadCaseDir,"EleStress_shell_3N3GP.out")
+		EleStrainFile_shell_3N3GP = os.path.join(LoadCaseDir,"EleStrain_shell_3N3GP.out")
+		EleStressFile_tetra_4N4GP = os.path.join(LoadCaseDir,"EleStress_tetra_4N4GP.out")
+		EleStrainFile_tetra_4N4GP = os.path.join(LoadCaseDir,"EleStrain_tetra_4N4GP.out")
+		EleStressFile_brick_8N8GP = os.path.join(LoadCaseDir,"EleStress_brick_8N8GP.out")
+		EleStrainFile_brick_8N8GP = os.path.join(LoadCaseDir,"EleStrain_brick_8N8GP.out")
 		EleBasicDefFile = os.path.join(LoadCaseDir,"EleBasicDef_All.out")
 		ElePlasticDefFile = os.path.join(LoadCaseDir,"ElePlasticDef_All.out")
 # 		EleIntPointsFile = os.path.join(LoadCaseDir,"EleIntPoints_All.out")	
@@ -146,20 +186,25 @@ def createODB(*argv, Nmodes=0, deltaT=0.0, monitorEleTags=[], monitorEleType="no
 		ops.recorder('Node', '-file', NodeDispFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'disp')
 		ops.recorder('Node', '-file', ReactionFile,  '-time', '-dT', deltaT, '-node', *nodeList, '-dof',*dofList_node, 'reaction')
 		
-		if len(monitorEleTags)>0:
-			# Recording monitor tags
-			if monitorGroupName =="none" or monitorOutput =="none":
-				raise Exception("Wrong input arguments. Missing 'monitorGroupName' or 'monitorOutput' in createODB command")
-			else:
-				GroupMonitorDir = os.path.join(LoadCaseDir,monitorGroupName)
-				if not os.path.exists(GroupMonitorDir):
-					os.makedirs(GroupMonitorDir)
+		if len(eleList_shell_4N4GP)>0:
+			ops.recorder('Element', '-file', EleStressFile_shell_4N4GP,  '-time', '-dT', deltaT, '-ele', *eleList_shell_4N4GP,  'stresses')
+			ops.recorder('Element', '-file', EleStrainFile_shell_4N4GP,  '-time', '-dT', deltaT, '-ele', *eleList_shell_4N4GP,  'strains')
+		
+		if len(eleList_shell_3N3GP)>0:
+			ops.recorder('Element', '-file', EleStressFile_shell_3N3GP,  '-time', '-dT', deltaT, '-ele', *eleList_shell_3N3GP, 'stresses')
+			ops.recorder('Element', '-file', EleStrainFile_shell_3N3GP,  '-time', '-dT', deltaT, '-ele', *eleList_shell_3N3GP, 'strains')
+		
+		if len(eleList_tetra_4N4GP)>0:
+			ops.recorder('Element', '-file', EleStressFile_tetra_4N4GP,  '-time', '-dT', deltaT, '-ele', *eleList_tetra_4N4GP, 'stresses')
+			ops.recorder('Element', '-file', EleStrainFile_tetra_4N4GP,  '-time', '-dT', deltaT, '-ele', *eleList_tetra_4N4GP, 'strains')
+		
+		if len(eleList_brick_8N8GP)>0:
+			ops.recorder('Element', '-file', EleStressFile_brick_8N8GP,  '-time', '-dT', deltaT, '-ele', *eleList_brick_8N8GP, 'stresses')
+			ops.recorder('Element', '-file', EleStrainFile_brick_8N8GP,  '-time', '-dT', deltaT, '-ele', *eleList_brick_8N8GP, 'strains')
+		
 
-				idbf._saveMonitorElementData(monitorEleType, monitorOutput, GroupMonitorDir, monitorEleTags, deltaT, dofList_ele)
-				
 	else:
-		print("Insufficient arguments: ModelName and LoadCaseName are required.")
-		print("Output from any loadCase will not be saved")
+		print(">>> VFO Warning: No 'loadcase' argument was provided to save output.<<<")
 		
 		
 def readODB(*argv):
@@ -205,6 +250,803 @@ def readODB(*argv):
 		return nodes, elements
 
 
+
+
+		
+"""
+Change PyVista theme
+https://docs.pyvista.org/examples/02-plot/themes.html
+"""
+
+pv.set_plot_theme("document")
+# pv.set_jupyter_backend('panel')
+#pv.set_jupyter_backend('none')
+
+
+
+def _get_modelDisplay(nodeArray, elementArray, eleClassTags):
+    
+        
+    vertices = nodeArray[:,1:]     # point coordinates
+    nodeTags = nodeArray[:,0].astype(int) 
+	
+    eleTagCoord = np.empty(0, dtype=int)    # To store coordinates for element tags
+    
+    def _getNodeIndex(nodeTag):
+        nodeIndex, = np.where(nodeTags[:] == int(nodeTag))
+        return int(nodeIndex)
+
+    
+    def _eleClassTag(eleTag):
+        """
+        Returns element class tag, MAY BE MOVE ALL INTERNAL DEF TO A SEPARATE FILE
+        """
+        try:
+            i, = np.where(eleClassTags[:,0] == int(eleTag))
+            return eleClassTags[i,1]
+        except:
+            return eleClassTags[1]
+    
+    
+    
+    def _getPV_2NodeELements(elementArray):
+        lineElements = np.empty(0, dtype=int)  # Initiate line element array
+        for ii in elementArray:
+            # print(ii)
+            if len(ii)==3:
+                # print("ok")
+                tempArray = np.array([2, _getNodeIndex(ii[1]), _getNodeIndex(ii[2])])
+                # print(tempArray)
+			
+                lineElements = np.hstack((lineElements,tempArray))
+
+        return lineElements.astype(int)
+
+    
+    
+    def _getPV_surfaces(elementArray, eleClassTags):
+        """
+        ALL POSSIBLE SURFACES SHOULD BE ADDED TO ONE np.hstack() FOR PLOTTING
+
+        """
+        faces = np.empty(0, dtype=int)
+        
+        for ii in elementArray:
+            """
+            _eleClassTag procedure is ALSO defined in main vfo file
+            """
+            eleTag = int(ii[0])
+            classTag = _eleClassTag(ii[0])
+            # print(classTag, type(classTag))
+            tempArray = np.empty(0, dtype=int)
+
+            if _eleClassTag(ii[0]) in classTags.triNodeEleTags:
+                # print("triNodeEleTags")
+                tempArray = np.array([3, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[3])])
+
+            if _eleClassTag(ii[0]) in classTags.fourNodeEleTags:
+                tempArray = np.array([4, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[3]), _getNodeIndex(ii[4])])
+
+            if _eleClassTag(ii[0]) in classTags.MVLEMEleTags:
+                #print("mvlem3d")
+                tempArray = np.array([4, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[4]), _getNodeIndex(ii[3])])
+
+            if _eleClassTag(ii[0]) in classTags.tetEleTags:
+                tempArray = np.array([3, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[3]),
+                                      3, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[4]),
+                                      3, _getNodeIndex(ii[1]), _getNodeIndex(ii[3]), _getNodeIndex(ii[4]),
+                                      3, _getNodeIndex(ii[2]), _getNodeIndex(ii[3]), _getNodeIndex(ii[4])])
+
+            if _eleClassTag(ii[0]) in classTags.eightNodeBrickEleTags:
+                tempArray = np.array([4, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[3]), _getNodeIndex(ii[4]),
+                                      4, _getNodeIndex(ii[5]), _getNodeIndex(ii[6]), _getNodeIndex(ii[7]), _getNodeIndex(ii[8]),
+                                      4, _getNodeIndex(ii[1]), _getNodeIndex(ii[2]), _getNodeIndex(ii[6]), _getNodeIndex(ii[5]),
+                                      4, _getNodeIndex(ii[4]), _getNodeIndex(ii[3]), _getNodeIndex(ii[7]), _getNodeIndex(ii[8]),
+                                      4, _getNodeIndex(ii[1]), _getNodeIndex(ii[4]), _getNodeIndex(ii[8]), _getNodeIndex(ii[5]),   
+                                      4, _getNodeIndex(ii[2]), _getNodeIndex(ii[3]), _getNodeIndex(ii[7]), _getNodeIndex(ii[6]),
+                                     ])    
+
+
+            faces = np.hstack((faces,tempArray))
+            # print(faces)
+
+        return faces
+
+    
+    lines = _getPV_2NodeELements(elementArray)
+    surf = _getPV_surfaces(elementArray, eleClassTags)
+    
+    mesh = pv.PolyData(vertices, surf)
+    mesh_lines = pv.PolyData(vertices)
+    mesh_lines.lines = lines
+	
+    return mesh, mesh_lines, vertices, nodeTags
+
+def _roundNearestFive(num):
+    nearestFive = np.around(np.floor(num)/5, decimals=0)*5
+    # print(np.floor(num), nearestFive)
+    if abs(np.floor(num))> abs(nearestFive):
+        return (abs(nearestFive)+5)*num/abs(num)
+    else:
+        return abs(nearestFive)*num/abs(num)
+		
+def _nodecoords(nodetag, nodeArray):
+	"""
+	Returns an array of node coordinates: works like nodeCoord() in opensees.
+	"""
+	i, = np.where(nodeArray[:,0] == float(nodetag))
+	return nodeArray[int(i),1:]
+
+
+
+def _getEleTagCoord(elementArray, nodeArray):
+	"""
+	coordinate for element tags
+	"""
+	
+	eleTagCoord = np.empty([len(elementArray), 4])  # Each row of this array will store [eleTag, x, y, z]
+	# eleTagCoord = np.empty(0, dtype=int)    # To store coordinates for element tags
+	count_ii = 0
+	for ii in elementArray:
+		tempCoordArray = np.empty([len(ii)-1,3])  # Array of shape [numNodes x 3] to store x, y, z coordinate of each node in this element 
+		count_jj = 0
+		# testArray = ii
+		# print(testArray)
+		for jj in ii[1:]:
+			# print("jj :", jj)
+			# print("jj type :", type(jj))
+			tempCoordArray[count_jj] = _nodecoords(jj, nodeArray)
+			count_jj+=1
+			
+		# print(tempCoordArray)
+		thisTag = ii[0]
+		# aveX = np.average(tempCoordArray[:,0])
+		# aveY = np.average(tempCoordArray[:,1])
+		# aveZ = np.average(tempCoordArray[:,2])
+		# print(thisTag, aveX, aveY, aveZ)
+		
+		eleTagCoord[count_ii] = np.array([ii[0], np.average(tempCoordArray[:,0]), np.average(tempCoordArray[:,1]), np.average(tempCoordArray[:,2])])
+		count_ii+=1
+	
+	# print(eleTagCoord)
+		
+	return eleTagCoord
+	
+
+def plot_model(model="none",show_nodes="no",show_nodetags="no",show_eletags="no",font_size=10,setview="3D",elementgroups=None,line_width=1, filename=None):
+    
+	"""
+	a function to plot the model of structure.
+	
+	Command:
+	
+		plot_model(model="none",show_nodes="no",show_nodetags="no",show_eletags="no",font_size=10,setview="3D",elementgroups=None,line_width=1)
+	
+	INPUT:
+		model		: (string)
+			name of the model output database as used in createODB() function. If no name is provided, the function tries to get data from the active model. 
+							Default is "none".
+							
+		show_nodes  : (string)
+			Renders nodes as spheres. Default is "no".
+							
+		show_nodetags	: (string)
+			Displays node tags if "yes". Default is "no".
+			
+		show_eletags	: (string)
+			Displays element tags if "yes". Default is "no".
+			
+		font_size	: (int)
+			Size of tag font. Default is 10.
+			
+		setview		: (str)
+			sets the camera view to predefined angles. Valid entries are "xy","yz","xz","3D", or a list with [x,y,z] unit vector. Default is "3D".
+			
+		elementgroups : (list)
+			List of lists of elements of groups and respective colors.
+			
+		line_width  : (float)
+			Line width of the rendered beam-column elements.
+			
+		filename	: (str)
+			Filename to save an image of the deformed shape.
+		
+		
+	"""
+		
+
+	# Check if their is an output database or not.
+	if model == "none":
+		print("No Model_ODB specified, trying to get data from the active model.")
+		try:
+			this_nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
+		except:
+			raise Exception(">>>> VFO ERROR: No Model_ODB specified. No active model found.")
+	else:
+		print("Reading data from the "+model+"_ODB.")
+		try:
+			this_nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(model) ## Add eleClassTags to the Tcl data
+			# print(np.shape(nodeArray))
+		except:
+			raise Exception(">>>> VFO ERROR: No Model_ODB found. Exiting 'plot_model()' function now.<<<<")
+
+	# print("this_nodeArray", this_nodeArray)
+	# print("shape this_nodeArray", np.shape(this_nodeArray))
+	# print("elementArray", elementArray)
+	# print("eleClassTags", eleClassTags)
+	
+	## Check if the model is 2D or 3D
+	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	ndm = len(this_nodeArray[0,:]) -1
+	if ndm == 2:
+		for ii in range(0,len(this_nodeArray[:,0])):
+			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+	else:
+		nodeArray = this_nodeArray
+			
+			
+	
+	mesh_original, mesh_lines_original, vertices, nodeTags = _get_modelDisplay(nodeArray, elementArray, eleClassTags)
+
+	pl = pv.Plotter()
+	pl.show(interactive_update=True)
+	
+	if show_nodes == "yes":
+		point_size = 5.0
+		spheres=True
+	else:
+		point_size = 0.0
+		spheres=False
+		
+	pl.add_mesh(mesh_original, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, color="green", opacity=1.0, render_lines_as_tubes=False, line_width=1)  # "show_edges=True" will NOT work with PlotterITK
+	pl.add_mesh(mesh_lines_original, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, color="green", opacity=1.0, render_lines_as_tubes=False, line_width=line_width)  # "show_edges=True" will NOT work with PlotterITK
+	
+	eleTagCoord = _getEleTagCoord(elementArray, nodeArray) 
+	
+	## Get nodes, eleClassTags for the elements in each group
+	if elementgroups is not None:
+		for gg, thisgroup in enumerate(elementgroups[0]):
+			thisgroup_elementArray = [None]*len(thisgroup)
+			thisgroup_color = elementgroups[1][gg]
+			
+			for ii, ele in enumerate(thisgroup):
+				i, = np.where(eleTagCoord[:,0] == float(ele))
+				thisgroup_elementArray[ii] = elementArray[int(i)]
+				
+			mesh_thisgroup, mesh_lines_thisgroup, vertices_thisgroup, nodeTags_thisgroup = _get_modelDisplay(nodeArray, thisgroup_elementArray, eleClassTags)
+			pl.add_mesh(mesh_thisgroup, render_points_as_spheres=False, point_size=point_size, show_edges=False, color=thisgroup_color, opacity=1.0, render_lines_as_tubes=False, line_width=1)  # "show_edges=True" will NOT work with PlotterITK
+			pl.add_mesh(mesh_lines_thisgroup, render_points_as_spheres=False, point_size=point_size, show_edges=False, color=thisgroup_color, opacity=1.0, render_lines_as_tubes=True, line_width=line_width)  # "show_edges=True" will NOT work with PlotterITK
+		
+		
+		
+		
+	if setview in ["XY","xy"]:
+		pl.view_xy()
+	elif setview in ["YZ","yz"]:
+		pl.view_yz()
+	elif setview in ["XZ","xz"]:
+		pl.view_xz()
+	elif setview == "3D":
+		pl.view_isometric()
+	else:
+		pl.set_viewup(setview)
+
+	## Overwrite setview option to "xy" if the model is 2D
+	if ndm == 2:
+		pl.view_xy()
+	else:
+		pass
+	 
+	pl.add_text('VFO - Visualization for OpenSees', position='lower_left', color='green', font_size=6)
+	
+	if show_nodetags=="yes":
+		pl.add_point_labels(vertices, nodeTags.astype(int), point_size=1,render_points_as_spheres=True, font_size=font_size ,shape_color="white", shape_opacity=0.2, render=True,always_visible=True)
+
+	if show_eletags=="yes":
+		# print(eleTagCoord[:,1:], "and", eleTagCoord[:,0])
+		pl.add_point_labels(eleTagCoord[:,1:], eleTagCoord[:,0].astype(int), font_size=font_size,shape_color="gray", shape_opacity=0.2, render=True,always_visible=True)
+
+	if filename is not None:
+		pl.screenshot(filename+".png") 
+		
+	pl.show()
+
+
+
+
+def plot_deformedshape(model="none",loadcase="none",scale=10,tstep=-1,overlap="no",contour="none",setview="3D", line_width=1, contourlimits=None, filename=None):
+    
+	"""
+	a function to plot deformed shape of structure.
+	
+	Command:
+	
+		plot_deformedshape(model="none",loadcase="none",scale=10,tstep=-1,overlap="no",contour="none",setview="3D", line_width=1, contourlimits=None, filename=None)
+	
+	INPUT:
+		model		: (string)
+			Name of the model output database as used in createODB() function. Default is "none".
+			
+		loadcase	: (string)
+			Name of the load case to save output data.
+			
+		scale		: (int)
+			Scale factor to be applied to the deformed shape. Default is 10.
+			
+		tstep		: (float)
+			Time step or analysis step at which the deformed shape is to be plotted.
+			
+		contour		: (str)
+			Contours of displacement in x, y, or z. Default is "none".
+			
+		contourlimits: (list)
+			A list of minimum and maximum limits of the displacement contours.
+		
+		setview		: (str)
+			sets the camera view to predefined angles. Valid entries are "xy","yz","xz","3D", or a list with [x,y,z] unit vector. Default is "3D".
+			
+		line_width  : (int)
+			Line thickness for the beam-column elements. Default is 1.
+			
+		filename	: (str)
+			Filename to save an image of the deformed shape.
+		
+	"""
+	print("Reading structure data from "+model+"_ODB.")
+	try:
+		this_nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(model) ## Add eleClassTags to the Tcl data
+		# print(np.shape(this_nodeArray))
+	except:
+		raise Exception(">>>> VFO ERROR: No Model_ODB found. No active model found. Exiting 'plot_modeshape()' now.<<<<")
+        
+	print("Reading loadcase '"+loadcase+"' data from "+model+"_ODB.")
+	try:
+		timeSteps, displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+		# print('timeSteps')
+		# print(np.shape(displacement_nodeArray[0,:,:]))
+	except:
+		raise Exception(">>>> VFO ERROR: No node displacements from loadcase was found in "+model+"_ODB. Exiting 'plot_modeshape()' now. <<<<")
+		
+	## Check if the model is 2D or 3D
+	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	ndm = len(this_nodeArray[0,:]) -1
+	if ndm == 2:
+		for ii in range(0,len(this_nodeArray[:,0])):
+			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+	else:
+		nodeArray = this_nodeArray
+		
+	pl = pv.Plotter()		
+	pl.show(interactive_update=True)
+
+	def _get_deformed_mesh(tstep):
+	
+		if tstep == -1:
+			jj = len(timeSteps)-1
+			printLine = "Final deformed shape"
+		else:
+			jj = (np.abs(timeSteps - tstep)).argmin()			# index closest to the time step requested.
+			if timeSteps[-1] < tstep:
+				print(">>> VFO Warning: plot_deformedshape: Time-Step has exceeded maximum analysis time step. <<<")
+			printLine = "Deformation at time: " + str(round(timeSteps[jj], 2))
+				
+		DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*displacement_nodeArray[jj,:,:]
+		# print("DeflectedNodeCoordArray shape ", np.shape(DeflectedNodeCoordArray))
+		# print("nodeArray[:,0] shape ", np.shape(nodeArray[:,0].reshape(len(nodeArray[:,0]),1)))
+	  
+		DeflectedNodeArray = np.hstack((nodeArray[:,0].reshape(len(nodeArray[:,0]),1),DeflectedNodeCoordArray))
+		
+		mesh_deflected, mesh_lines_deflected, vertices, nodeTags = _get_modelDisplay(DeflectedNodeArray, elementArray, eleClassTags)
+		
+		# try:
+			# pl.remove_actor("thisMesh")
+		# except:
+			# pass
+			
+		point_size = 0.0
+		spheres=False
+		
+		Clim = contourlimits
+		
+		if contour == "none":
+			pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, color="green", opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+			pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, color="green", opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+		elif contour in ["x","X"]:
+			x = displacement_nodeArray[jj,:,0]
+			pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=x, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+			pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=x, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+		elif contour in ["y","Y"]:
+			y = displacement_nodeArray[jj,:,1]
+			pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=y, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+			pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=y, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+		elif contour in ["z","Z"]:
+			z = displacement_nodeArray[jj,:,2]
+			pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=z, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+			pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=z, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+			
+			# ALTERNATIVELY, USE https://docs.pyvista.org/api/plotting/_autosummary/pyvista.Plotter.view_xy.html
+    
+		if setview in ["XY","xy"]:
+			pl.view_xy()
+		elif setview in ["YZ","yz"]:
+			pl.view_yz()
+		elif setview in ["XZ","xz"]:
+			pl.view_xz()
+		elif setview == "3D":
+			pl.view_isometric()
+		else:
+			pl.set_viewup(setview)
+		
+		## Overwrite setview option to "xy" if the model is 2D
+		if ndm == 2:
+			pl.view_xy()
+		else:
+			pass
+
+	pl.add_text('VFO - Visualization for OpenSees', position='lower_left', color='green', font_size=6)
+	
+	slider = pl.add_slider_widget(_get_deformed_mesh, [0, timeSteps[-1]], title="time steps", title_opacity=0.5, title_color="red", fmt="%0.9f", title_height=0.008,)
+	
+	if filename is not None:
+		pl.screenshot(filename+".png") 
+	
+	# if overlap=="yes":
+		# mesh_original, vertices, nodeTags = _get_modelDisplay(nodeArray, elementArray, eleClassTags)
+		# pl.add_mesh(mesh_original, show_edges=True, color="gray", opacity=0.3)  # "show_edges=True" will NOT work with PlotterITK
+    
+	
+
+	point_size = 1
+	#font_size = 10
+    
+	# if nodes == "yes":
+		# point_size = 8
+		# pl.add_mesh(vertices, color='black', point_size=point_size, render_points_as_spheres=True)
+        
+	# if node_tags=="yes":
+		# pl.add_point_labels(vertices, nodeTags, point_size=1,render_points_as_spheres=True, font_size=font_size ,shape_color="white", shape_opacity=0.2, render=True,always_visible=True)
+
+	pl.show()
+
+
+def plot_modeshape(model="none",modenumber=1,scale=10,overlap="yes",contour="none",setview="3D", line_width=1, contourlimits=None, filename=None):
+    
+	"""
+	
+	Command:
+	
+		plot_modeshape(model="none",modenumber=1,scale=10,overlap="no",contour="none",setview="3D", contourlimits=None, filename=None)
+	
+	INPUT:
+		model		: (string)
+			Name of the model output database as used in createODB() function. Default is "none".
+			
+		loadcase	: (string)
+			Name of the load case to save output data.
+			
+		scale		: (int)
+			Scale factor to be applied to the deformed shape. Default is 10.
+		
+		contour		: (str)
+			Contours of displacement in x, y, or z. Default is "none".
+			
+		contourlimits: (list)
+			A list of minimum and maximum limits of the displacement contours.
+		
+		setview		: (str)
+			sets the camera view to predefined angles. Valid entries are "xy","yz","xz","3D", or a list with [x,y,z] unit vector. Default is "3D".
+			
+		line_width  : (int)
+			Line thickness for the beam-column elements. Default is 1.
+			
+		filename	: (str)
+			Filename to save an image of the mode shape.
+		
+	"""
+	
+	modeNumber = modenumber
+	if model == "none":
+		print("No Model_ODB specified to plot modeshapes")
+		ops.wipeAnalysis()
+		eigenVal = ops.eigen(modeNumber+1)
+		Tn=4*asin(1.0)/(eigenVal[modeNumber-1])**0.5
+		this_nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
+		Mode_nodeArray = idbf._getModeShapeData(modeNumber)		# DOES NOT GIVE MODAL PERIOD
+		ops.wipeAnalysis()
+	else:
+		print("Reading modeshape data from "+str(model)+"_ODB")
+		this_nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(model)
+		Mode_nodeArray, Periods = idbf._readModeShapeData(model,modeNumber)
+		Tn = Periods[modeNumber-1]
+				
+
+	## Check if the model is 2D or 3D
+	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	ndm = len(this_nodeArray[0,:]) -1
+	if ndm == 2:
+		for ii in range(0,len(this_nodeArray[:,0])):
+			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+	else:
+		nodeArray = this_nodeArray
+		
+	pl = pv.Plotter()		
+	# pl.show(interactive_update=True)
+	
+	
+	# DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*displacement_nodeArray[jj,:,:]
+	DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*Mode_nodeArray[:,1:]
+	
+	DeflectedNodeArray = np.hstack((nodeArray[:,0].reshape(len(nodeArray[:,0]),1),DeflectedNodeCoordArray[:,0:]))
+	# DeflectedNodeArray = Mode_nodeArray
+	# print("nodeArray is ", nodeArray)
+	# print("Mode_nodeArray ", Mode_nodeArray)
+	# print("DeflectedNodeCoordArray is ", DeflectedNodeCoordArray)
+	# print("DeflectedNodeArray is ", DeflectedNodeArray)
+	
+	# mesh_deflected, vertices, nodeTags = _get_modelDisplay(DeflectedNodeArray, elementArray, eleClassTags)
+	mesh_deflected, mesh_lines_deflected, vertices, nodeTags = _get_modelDisplay(DeflectedNodeArray, elementArray, eleClassTags)
+	
+	point_size = 0.0
+	spheres=False
+		
+	Clim = contourlimits
+	
+	if contour == "none":
+		pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, color="green", opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+		pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, color="green", opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+	elif contour in ["x","X"]:
+		x = Mode_nodeArray[:,1]
+		pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=x, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+		pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=x, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+	elif contour in ["y","Y"]:
+		y = Mode_nodeArray[:,2]
+		pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=y, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+		pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=y, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+	elif contour in ["z","Z"]:
+		z = Mode_nodeArray[:,3]
+		pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=z, clim=Clim, opacity=1.0,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+		pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=z, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+			
+		# ALTERNATIVELY, USE https://docs.pyvista.org/api/plotting/_autosummary/pyvista.Plotter.view_xy.html
+
+	if setview in ["XY","xy"]:
+		pl.view_xy()
+	elif setview in ["YZ","yz"]:
+		pl.view_yz()
+	elif setview in ["XZ","xz"]:
+		pl.view_xz()
+	elif setview == "3D":
+		pl.view_isometric()
+	else:
+		pl.set_viewup(setview)
+	
+	## Overwrite setview option to "xy" if the model is 2D
+	if ndm == 2:
+		pl.view_xy()
+	else:
+		pass
+
+	pl.add_text("Mode = "+str(modenumber), color="black", font_size=12)
+	pl.add_text('VFO - Visualization for OpenSees', position='lower_left', color='green', font_size=6)
+		
+	if filename is not None:
+		pl.screenshot(filename+".png") 
+	
+	point_size = 1
+	#font_size = 10
+    
+	pl.show()
+
+
+def animate_deformedshape(model="none",loadcase="none",scale=10,speedup=1,overlap="yes",contour="none",setview="3D",line_width=1,node_for_th=None, node_dof=1, moviename=None,gifname=None):
+    
+	"""
+	a function to plot mode shape of model.
+	
+	Command:
+	
+	animate_deformedshape(model="none",loadcase="none",scale=10,speedup=1,overlap="yes",contour="none",setview="3D",line_width=1,node_for_th=None, node_dof=1, moviename=None,gifname=None)
+    	
+	INPUT:
+		model		: (string)
+			Name of the model output database as used in createODB() function. Default is "none".
+			
+		loadcase	: (string)
+			Name of the load case to save output data.
+			
+		scale		: (int)
+			Scale factor to be applied to the deformed shape. Default is 10.
+		
+		contour		: (str)
+			Contours of displacement in x, y, or z. Default is "none".
+			
+		contourlimits: (list)
+			A list of minimum and maximum limits of the displacement contours.
+		
+		setview		: (str)
+			sets the camera view to predefined angles. Valid entries are "xy","yz","xz","3D", or a list with [x,y,z] unit vector. Default is "3D".
+			
+		line_width  : (int)
+			Line thickness for the beam-column elements. Default is 1.
+			
+		node_for_th : (int)
+			Node ID to display displacement time-history.
+		
+		node_dof	: (int)
+			Degree-of-freedom to display displacement time-history of node_for_th.
+			
+		moviename	: (str)
+			Filename to save animation as a movie in .mp4 format.
+			
+		gifname	: (str)
+			Filename to save animation as a movie in .gif format.
+		
+	"""
+	print("Reading structure data from "+model+"_ODB.")
+	try:
+		this_nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(model) ## Add eleClassTags to the Tcl data
+		# print(np.shape(this_nodeArray))
+	except:
+		raise Exception(">>>> VFO ERROR: No Model_ODB found. No active model found. Exiting 'plot_modeshape()' now.<<<<")
+        
+	print("Reading loadcase '"+loadcase+"' data from "+model+"_ODB.")
+	try:
+		timeSteps, displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+		# print('timeSteps')
+		# print(np.shape(displacement_nodeArray[0,:,:]))
+	except:
+		raise Exception(">>>> VFO ERROR: No node displacements from loadcase was found in "+model+"_ODB. Exiting 'plot_modeshape()' now. <<<<")
+		
+	
+	## Check if the model is 2D or 3D
+	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	ndm = len(this_nodeArray[0,:]) -1
+	if ndm == 2:
+		for ii in range(0,len(this_nodeArray[:,0])):
+			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+	else:
+		nodeArray = this_nodeArray
+		
+		
+
+	pl = pv.Plotter(window_size=[960, 528])
+	pl.show(interactive_update=True)
+	# pl.show(auto_close=False)
+	
+	
+	#### Additional chart to overlay  ######S
+	if node_for_th is not None:
+		
+		i, = np.where(nodeArray[:,0] == float(node_for_th))
+		th_nodeDisp = displacement_nodeArray[:,int(i),node_dof]
+	
+		th_chart = pv.Chart2D(size=(0.30, 0.30), loc=(0.06, 0.1), x_label="Time (s)", y_label="")
+		th_chart.border_width=0
+		th_chart.border_color = 'w'
+		th_line = th_chart.line(timeSteps,th_nodeDisp)
+		th_chart.x_range = (0, _roundNearestFive(max(timeSteps)))
+		th_chart.y_range = (_roundNearestFive(min(th_nodeDisp)), _roundNearestFive(max(th_nodeDisp)))
+		th_chart.x_axis.tick_count = 5
+		th_chart.y_axis.tick_count = 5
+		th_chart.title = 'Node '+str(node_for_th)+' disp in dof '+str(node_dof)
+		# th_chart.y_range = (-10, 15)
+		# print("chart limits= ", np.floor(min(th_nodeDisp)), np.ceil(max(th_nodeDisp)), max(timeSteps))
+		th_chart.background_color = (1.0, 1.0, 1.0, 0.4)
+		pl.add_chart(th_chart)
+	################################
+	
+	
+	
+	
+	if moviename is not None:
+		pl.open_movie(moviename+".mp4")
+		# pl.write_frame()
+		
+	if gifname is not None:
+		pl.open_gif(gifname+".gif")
+	
+	# mesh_original, vertices, nodeTags = _get_modelDisplay(nodeArray, elementArray, eleClassTags)
+	mesh_original, mesh_lines_original, vertices, nodeTags = _get_modelDisplay(nodeArray, elementArray, eleClassTags)
+
+	
+	point_size = 0.0
+	spheres=False
+	
+	# Add original mesh to set the view first
+	# thisMesh1 = pl.add_mesh(mesh_original, show_edges=True, color="gray", opacity=0.3, name="thisMesh")  # "show_edges=True" will NOT work with PlotterITK
+	# thisMesh2 = pl.add_mesh(mesh_original, show_edges=True, color="gray", opacity=0.3, name="thisMesh")  # "show_edges=True" will NOT work with PlotterITK
+	
+	thisMesh1 = pl.add_mesh(mesh_original, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, color="gray", opacity=0.3, render_lines_as_tubes=False, line_width=1)  # "show_edges=True" will NOT work with PlotterITK
+	thisMesh2 = pl.add_mesh(mesh_lines_original, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, color="gray", opacity=0.3, render_lines_as_tubes=False, line_width=line_width)  # "show_edges=True" will NOT work with PlotterITK
+	
+	
+	text1 = pl.add_text("")
+	
+	# ALTERNATIVELY, USE https://docs.pyvista.org/api/plotting/_autosummary/pyvista.Plotter.view_xy.html
+	
+	if setview in ["XY","xy"]:
+		pl.view_xy()
+	elif setview in ["YZ","yz"]:
+		pl.view_yz()
+	elif setview in ["XZ","xz"]:
+		pl.view_xz()
+	elif setview == "3D":
+		pl.view_isometric()
+		pos=pl.camera.position
+		pl.set_position(pos)
+	else:
+		pl.set_viewup(setview)
+		
+	## Overwrite setview option to "xy" if the model is 2D
+	if ndm == 2:
+		pl.view_xy()
+	else:
+		pass
+		
+	point_size = 1
+		
+	maxDispArray = idbf._getMaxNodeDisp(timeSteps, displacement_nodeArray)
+	# print(maxDispArray)
+	# index_x_max = np.argmax(maxDispArray[:,1])
+	# index_x_min = np.argmax(abs(maxDispArray[:,1]))
+	# index_y_max = np.argmax(maxDispArray[:,3])
+	
+	if contour in ["x","X"]:
+		_thisScalar=0
+		Clim = [0,max(max(maxDispArray[:,1]),max(abs(maxDispArray[:,2])))]
+	elif contour in ["y","Y"]:
+		_thisScalar=1
+		Clim = [0,max(max(maxDispArray[:,3]),max(abs(maxDispArray[:,4])))]
+	elif contour in ["z","Z"]:
+		_thisScalar=2
+		Clim = [0,max(max(maxDispArray[:,5]),max(abs(maxDispArray[:,6])))]
+		
+	
+	jj=0
+	
+	# Animation
+	print("Creating animation gif/movie file. On-screen updating may seem choppy/slow. Please don't close the window.")
+	
+	for jj in range(0,len(timeSteps),math.ceil(speedup)):
+		tstep = timeSteps[jj]
+		DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*displacement_nodeArray[jj,:,:]
+		DeflectedNodeArray = np.hstack((nodeArray[:,0].reshape(len(nodeArray[:,0]),1),DeflectedNodeCoordArray))
+		# print(jj)
+		
+		mesh_deflected, mesh_lines_deflected, vertices, nodeTags = _get_modelDisplay(DeflectedNodeArray, elementArray, eleClassTags)
+		
+		if contour == "none":
+			Scalar = None
+			Clim = None
+		else:
+			Scalar = np.absolute(displacement_nodeArray[jj,:,_thisScalar])
+			
+		# pl.clear()
+		pl.remove_actor(thisMesh1)
+		pl.remove_actor(thisMesh2)
+		pl.remove_actor(text1)
+		# thisMesh = pl.add_mesh(mesh_deflected, show_edges=True, color="green", opacity=1.0, scalars=Scalar, clim=Clim, show_scalar_bar=True)  # "show_edges=True" will NOT work with PlotterITK		
+		thisMesh1=pl.add_mesh(mesh_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=1, scalars=Scalar, clim=Clim, opacity=1.0,show_scalar_bar=True,name="thisMesh1")  # "show_edges=True" will NOT work with PlotterITK
+		thisMesh2=pl.add_mesh(mesh_lines_deflected, show_edges=True, render_points_as_spheres=spheres, point_size=point_size, line_width=line_width, scalars=Scalar, clim=Clim, opacity=1.0,name="thisMesh2")  # "show_edges=True" will NOT work with PlotterITK
+	
+	
+		text1 = pl.add_text("Time = "+str(tstep), color="black", font_size=12)
+		pl.add_text('VFO - Visualization for OpenSees', position='lower_left', color='green', font_size=6)
+		
+		try:
+			th_line.update(timeSteps[0:jj,], displacement_nodeArray[0:jj,50,1])
+		except:
+			pass
+		
+		if moviename or gifname is not None:
+			pl.write_frame()
+
+		pl.update()
+			
+	print("Movie/Gif file is saved.")
+	
+
+
 def saveFiberData2D(ModelName, LoadCaseName, eleNumber, sectionNumber = 1, deltaT = 0.0, ZLE = False):
     """
     Model : string
@@ -248,1018 +1090,17 @@ ele_text_style = {'fontsize':8, 'fontweight':'bold', 'color':'darkred'}
 WireEle_style = {'color':'black', 'linewidth':1, 'linestyle':':'} # elements
 Eig_style = {'color':'red', 'linewidth':1, 'linestyle':'-'} # elements
 	
-def plot_model(*argv,Model="none"):
-	
-	""" 
-	Command: plot_model(<"nodes">,<"elements">,<Model="ModelName">)
-
-	nodes	: String, Optional, takes user input to show node tags on the model
-	elements: String, Optional, takes user input to show element tags on the model
-	Model	: Optional input for the name of the model used in createODB() to read the modeshape data from.
-	              The default is "none" and the mode shape is plotted from the active model.
-	
-	Matplotlib rendering is faster when tags are not displayed.
-	
-	"""
-
-	##  Default values
-	show_node_tags = 'no'
-	show_element_tags = 'no'
-
-	# Process inputs to allow for backwards compatibility
-	if len(argv)>0:
-		if any(nodeArg in argv for nodeArg in ["nodes","Nodes","node","Node"]):
-			show_node_tags = 'yes'
-		if any(eleArg in argv for eleArg in ["elements", "Elements", "element", "Element"]):
-			show_element_tags = 'yes'
-		if show_node_tags == "no" and show_element_tags == "no":
-			raise Exception("Wrong input arguments. Command should be plot_model(<'node'>,<'element'>,Model='model_name')")
-
-	# TODO make this a function?
-	# Check if their is an output database or not.
-	if Model == "none":
-		print("No Model_ODB specified, trying to get data from the active model.")
-		try:
-			nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
-		except:
-			raise Exception("No Model_ODB specified. No active model found.")
-	else:
-		print("Reading data from the "+Model+"_ODB.")
-		try:
-			nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model) ## Add eleClassTags to the Tcl data
-		except:
-			raise Exception("No Model_ODB found. No active model found.")
-		
-	nodetags = nodeArray[:,0]
-	
-	# print(nodeArray)
-	# print(elementArray)
-	# print(eleClassTags)
-	# print(eleClassTags[:,1])
-	
-	def nodecoords(nodetag):
-		"""
-		Returns an array of node coordinates: works like nodeCoord() in opensees.
-		"""
-		i, = np.where(nodeArray[:,0] == float(nodetag))
-		return nodeArray[int(i),1:]
-		
-	def _eleClassTag(eleTag):
-		"""
-		Returns element class tag
-		"""
-		i, = np.where(eleClassTags[:,0] == float(eleTag))
-		return eleClassTags[i,1]
-
-	# Check if the model is 2D or 3D
-	if len(nodecoords(nodetags[0])) == 2:
-		print('2D model')
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		
-		for ele in elementArray:
-			eleTag = int(ele[0])
-			Nodes =ele[1:]
-			
-			if len(Nodes) == 2:
-				# 2D beam-column elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				
-				ipltf._plotBeam2D(iNode, jNode, ax, show_element_tags, eleTag, "solid")
-				
-			if len(Nodes) == 3:
-				# 2D Planer three-node shell elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				
-				ipltf._plotTri2D(iNode, jNode, kNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-						
-			if len(Nodes) == 4:
-				if _eleClassTag(eleTag) in classTags.MVLEMEleTags:
-					# 2D Planer four-node shell elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[3])
-					lNode = nodecoords(Nodes[2])
-					
-				else:
-					## 2D Planer four-node shell elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-				
-				ipltf._plotQuad2D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-
-			
-		if show_node_tags == 'yes':
-			for node in nodetags:
-				ax.text(nodecoords(node)[0]*1.02, nodecoords(node)[1]*1.02, str(int(node)),**node_text_style) #label nodes
-			
-			ax.scatter(nodeArray[:,1], nodeArray[:,2], **node_style)
-					
-		ax.set_xlabel('X')
-		ax.set_ylabel('Y')
-		
-		
-	else:
-		print('3D model')
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1, projection='3d')
-		
-		for ele in elementArray:
-			eleTag = int(ele[0])
-			Nodes =ele[1:]
-			
-			if len(Nodes) == 2:
-				# 3D beam-column elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				
-				ipltf._plotBeam3D(iNode, jNode, ax, show_element_tags, eleTag, "solid")
-				
-			if len(Nodes) == 3:
-				# 3D Planer three-node shell elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				
-				ipltf._plotTri3D(iNode, jNode, kNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-				
-			if len(Nodes) == 4:
-				if _eleClassTag(eleTag) in classTags.MVLEMEleTags:
-					## 3D four-node Quad/shell element
-					## Reverse the node connectivity for MVLEM3D elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[3])
-					lNode = nodecoords(Nodes[2])
-					
-					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-				
-				elif _eleClassTag(eleTag) in classTags.tetEleTags:
-					## If the element is a four-node tetrahedron
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-					
-					ipltf._plotTetVol(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, 'solid', fillSurface='yes')
-				
-				
-				# elif _eleClassTag(eleTag) in classTags.fourNodeEleTags:			## USE THIS SELECTION WHEN OPENSEES 3.4.0 IS RELEASED IN BINARY - ANU
-				else:
-					## 3D Planer four-node shell elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-				
-					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, ele_style, fillSurface='yes')
-				
-			if len(Nodes) == 8:
-				# 3D eight-node Brick element
-				# Nodes in CCW on bottom (0-3) and top (4-7) faces resp
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
-				iiNode = nodecoords(Nodes[4])
-				jjNode = nodecoords(Nodes[5])
-				kkNode = nodecoords(Nodes[6])
-				llNode = nodecoords(Nodes[7])
-				
-				ipltf._plotCubeVol(iNode, jNode, kNode, lNode, iiNode, jjNode, kkNode, llNode, ax, show_element_tags, eleTag, 'solid', fillSurface='yes')
-				
-		if show_node_tags == 'yes':
-			for node in nodetags:
-				ax.text(nodecoords(node)[0]*1.02, nodecoords(node)[1]*1.02, nodecoords(node)[2]*1.02, str(int(node)),**node_text_style) #label nodes
-				
-			ax.scatter(nodeArray[:,1], nodeArray[:,2], nodeArray[:,3], **node_style)								# show nodes
-				
-        
-	ipltf._setStandardViewport(fig, ax, nodeArray[:,1:], len(nodecoords(nodetags[0])))
-	plt.axis('on')
-	plt.show()
-	return fig, ax
-
-
-def plot_modeshape(*argv,overlap="yes",Model="none"):
-	"""
-	Command: plot_modeshape(modeNumber,<scale>, <Model="modelName">)
-	
-	modeNumber : (int) Mode number to be plotted.
-	scale      : (int) Optional input to change the scale factor of the deformed shape. Default is 10.
-	overlap    : (str) Optional keyword argument to turn overlap off. Default value is "yes"
-	Model      : (str) Optional input for the name of the model used in createODB() to read the modeshape data from.
-	                   The default is "none" and the mode shape is plotted from the active model.
-	
-	"""
-	modeNumber = argv[0]
-	if len(argv) == 1:
-		print("No scale factor specified to plot modeshape, using dafault 10.")
-		print("Input arguments are plot_modeshape(modeNumber, scaleFactor, overlap='yes')")
-		scale = 10
-	elif len(argv) == 2:
-		scale = argv[1]
-	else:
-		raise Exception("Wrong input arguments. Command should be plot_model(ModeNumber,<ScaleFactor>,<Model='model_name'>)")
-		
-	if Model == "none":
-		print("No Model_ODB specified to plot modeshapes")
-		ops.wipeAnalysis()
-		eigenVal = ops.eigen(modeNumber+1)
-		Tn=4*asin(1.0)/(eigenVal[modeNumber-1])**0.5
-		nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
-		Mode_nodeArray = idbf._getModeShapeData(modeNumber)		# DOES NOT GIVE MODAL PERIOD
-		ops.wipeAnalysis()
-	else:
-		print("Reading modeshape data from "+str(Model)+"_ODB")
-		nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model)
-		Mode_nodeArray, Periods = idbf._readModeShapeData(Model,modeNumber)
-		Tn = Periods[modeNumber-1]
-				
-	DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*Mode_nodeArray[:,1:]
-	nodetags = nodeArray[:,0]
-	show_element_tags = 'no'	# No node or element tags are to be displayed on modeshape plots.
-
-	def nodecoords(nodetag):
-		"""
-		Returns an array of node coordinates: works like nodeCoord() in opensees.
-		"""
-		i, = np.where(nodeArray[:,0] == float(nodetag))
-		return nodeArray[int(i),1:]
-		
-	def nodecoordsEigen(nodetag):
-		"""
-		Returns an array of final deformed node coordinates
-		"""
-		i, = np.where(nodeArray[:,0] == float(nodetag))				# index for Original coordinates
-		ii, = np.where(Mode_nodeArray[:,0] == float(nodetag))		# index for Mode shape coordinates
-		return nodeArray[int(i),1:] + scale*Mode_nodeArray[int(ii),1:]
-
-	# Check if the model is 2D or 3D
-	if len(nodecoords(nodetags[0])) == 2:
-		print('2D model')
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1)
-		
-		for ele in elementArray:
-			eleTag = int(ele[0])
-			Nodes =ele[1:]
-			
-			if len(Nodes) == 2:
-				# 3D beam-column elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				
-				if overlap == "yes":
-					ipltf._plotBeam2D(iNode, jNode, ax, show_element_tags, eleTag, "wire")
-				
-				ipltf._plotBeam2D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-				
-			if len(Nodes) == 3:
-				## 2D Planer three-node shell elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				kNode_final = nodecoordsEigen(Nodes[2])
-
-				if overlap == "yes":
-					ipltf._plotTri2D(iNode, jNode, kNode, iNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-				
-				ipltf._plotTri2D(iNode_final, jNode_final, kNode_final, iNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-				
-			if len(Nodes) == 4:
-				## 2D four-node Quad/shell element
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				kNode_final = nodecoordsEigen(Nodes[2])
-				lNode_final = nodecoordsEigen(Nodes[3])
-				
-				if overlap == "yes":
-					ipltf._plotQuad2D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-					
-				ipltf._plotQuad2D(iNode_final, jNode_final, kNode_final, lNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-				        
-		ax.text(0.05, 0.95, "Mode "+str(modeNumber), transform=ax.transAxes)
-		ax.text(0.05, 0.90, "T = "+str("%.3f" % Tn)+" s", transform=ax.transAxes)
-
-	
-	else:
-		print('3D model')
-		fig = plt.figure()
-		ax = fig.add_subplot(1,1,1, projection='3d')
-		
-		for ele in elementArray:
-			eleTag = int(ele[0])
-			Nodes =ele[1:]
-			if len(Nodes) == 2:
-				## 3D beam-column elements
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				
-				if overlap == "yes":
-					ipltf._plotBeam3D(iNode, jNode, ax, show_element_tags, eleTag, "wire")
-				
-				ipltf._plotBeam3D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-				
-			if len(Nodes) == 4:
-				## 3D four-node Quad/shell element
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				kNode_final = nodecoordsEigen(Nodes[2])
-				lNode_final = nodecoordsEigen(Nodes[3])
-				
-				if overlap == "yes":
-					ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-					
-				ipltf._plotQuad3D(iNode_final, jNode_final, kNode_final, lNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-
-			if len(Nodes) == 8:
-				## 3D eight-node Brick element
-				## Nodes in CCW on bottom (0-3) and top (4-7) faces resp
-				iNode = nodecoords(Nodes[0])
-				jNode = nodecoords(Nodes[1])
-				kNode = nodecoords(Nodes[2])
-				lNode = nodecoords(Nodes[3])
-				iiNode = nodecoords(Nodes[4])
-				jjNode = nodecoords(Nodes[5])
-				kkNode = nodecoords(Nodes[6])
-				llNode = nodecoords(Nodes[7])
-				
-				iNode_final = nodecoordsEigen(Nodes[0])
-				jNode_final = nodecoordsEigen(Nodes[1])
-				kNode_final = nodecoordsEigen(Nodes[2])
-				lNode_final = nodecoordsEigen(Nodes[3])
-				iiNode_final = nodecoordsEigen(Nodes[4])
-				jjNode_final = nodecoordsEigen(Nodes[5])
-				kkNode_final = nodecoordsEigen(Nodes[6])
-				llNode_final = nodecoordsEigen(Nodes[7])
-				
-				if overlap == "yes":
-					ipltf._plotCubeVol(iNode, jNode, kNode, lNode, iiNode, jjNode, kkNode, llNode, ax, show_element_tags, eleTag, "wire", fillSurface='no') # plot undeformed shape
-
-				ipltf._plotCubeVol(iNode_final, jNode_final, kNode_final, lNode_final, iiNode_final, jjNode_final, kkNode_final, llNode_final, 
-								ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-								
-		ax.text2D(0.10, 0.95, "Mode "+str(modeNumber), transform=ax.transAxes)
-		ax.text2D(0.10, 0.90, "T = "+str("%.3f" % Tn)+" s", transform=ax.transAxes)
-
-				
-	ipltf._setStandardViewport(fig, ax, DeflectedNodeCoordArray, len(nodecoords(nodetags[0])))
-	plt.axis('on')
-	plt.show()
-	return fig, ax
-	
 
 
 
-def plot_deformedshape(Model="none", LoadCase="none", tstep = -1, scale = 10, overlap='no', monitorEleTags = [], monitorGroupName="none", 
-																								monitorOutput="none", dof=1, limitStates=[]):
-	"""
-	
-	Command: plot_deformedshape(Model="modelName", LoadCase="loadCase name", <tstep = time (float)>, <scale = scaleFactor (float)>, <overlap='yes'>)
-	
-	PARAMETERS
-	------------
-	
-	Keyword arguments are used to make the command clear.
-	
-	Model   : str
-		Name of the model used in createODB() to read the displacement data from.
-	
-	LoadCase: str 
-		Name of the load case used in createODB().
-		
-	tstep   : float
-		Optional value of the time stamp in the dynamic analysis. If no specific value is provided, the last step is used.
-		
-	scale   : int
-		Optional input to change the scale factor of the deformed shape. Default is 10.
-		
-	overlap : str
-		Optional input to plot the deformed shape overlapped with the wire frame of the original shape.
-		
-	monitorEleTags : list
-		a list of element tags to be displayed
-		
-	monitorGroupName : str
-		Name of the element group as defined in createODB() command.
-		
-	monitorOutput : str
-		Type of output to be monitored.
-		
-	dof : int
-		Degree-of-freedom to be monitored.
-		
-	limitStates : list
-		A list of four limit states.
-		
-	
-	Future Work: Add option to plot deformed shape based on "time" and "step number" separately.
-	
-	
-	"""
-
-	if Model == "none" or LoadCase=="none":
-		print("No output database specified to plot the deformed shape.")
-		print("Command should be plot_deformedshape(Model='modelname',loadCase='loadcase',<tstep=time>,<scale=int>)")
-		print("Not plotting deformed shape. Exiting now.")
-		
-	else:
-		print("Reading displacement data from "+str(Model)+"_ODB/"+LoadCase)
-		nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(Model)
-		timeSteps, Disp_nodeArray = idbf._readNodeDispData(Model,LoadCase)
-		
-		if tstep == -1:
-			jj = len(timeSteps)-1
-			printLine = "Final deformed shape"
-		else:
-			jj = (np.abs(timeSteps - tstep)).argmin()			# index closest to the time step requested.
-			if timeSteps[-1] < tstep:
-				print("XX Warining: Time-Step has exceeded maximum analysis time step XX")
-			printLine = "Deformation at time: " + str(round(timeSteps[jj], 2))
-		
-		
-		#############  Get data for the specified region to tag ##############
-		adjustViewport = "no"
-		adjNodeNum = 0			# Start the counter to curtail the array later
-		
-		#######################################################################
-		
-		DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*Disp_nodeArray[int(jj),:,:]
-		nodetags = nodeArray[:,0]
-		
-		show_element_tags = 'no'			# Set show tags to "no" to plot deformed shapes.
-		monitorElementDisplay = 'no'
-
-		#### Read the monitoring element deformation data
-		
-		if monitorGroupName !="none":
-			if monitorOutput =="none":
-				raise Exception("Wrong input arguments. Missing 'monitorOutput' argument to monitor element deformation")
-			else:
-				monitorElementDisplay = "yes"
-				ODBdir = Model+"_ODB"
-				LoadCaseDir = os.path.join(ODBdir, LoadCase)
-				GroupMonitorDir = os.path.join(LoadCaseDir,monitorGroupName)
-				if not os.path.exists(GroupMonitorDir):
-					print("No Group monitor data saved. Check inputs.")
-					
-				MonitorEleDef, MonitorEleForce, MonitorEleTags, MonitorEleInfo = idbf._readMonitorElementData(monitorOutput,GroupMonitorDir)
-		else:
-			pass
-			
-		#### For Future
-		# if monitorEleTags == []:
-			# DISPLAY ALL ELEMENTS
-		# else:
-			# DISPLAY ONLY USER INPUT ELEMENTS
-			# pass
-		############
-		
-		def nodecoords(nodetag):
-			# Returns an array of node coordinates: works like nodeCoord() in opensees.
-			i, = np.where(nodeArray[:,0] == float(nodetag))
-			return nodeArray[int(i),1:]
-
-        # TODO C: Can we just return DeflectedNodeCoordArray here instead of summing?
-		def nodecoordsFinal(nodetag):
-			# Returns an array of final deformed node coordinates
-			i, = np.where(nodeArray[:,0] == float(nodetag))				# Original coordinates
-			return nodeArray[int(i),1:] + scale*Disp_nodeArray[int(jj),int(i),:]
-
-		numLimStates = len(limitStates)
-		
-			
-		# Check if the model is 2D or 3D
-		if len(nodecoords(nodetags[0])) == 2:
-			print('2D model')
-			fig = plt.figure()
-			ax = fig.add_subplot(1,1,1)
-			
-			if adjustViewport == "yes":
-				adjusted_NodeArray = np.zeros([len(nodeArray),2])   # 2D array
-			
-			for ele in elementArray:
-				eleTag = int(ele[0])
-				Nodes =ele[1:]
-				
-				if len(Nodes) == 2:
-					# 3D beam-column elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,0:1] = nodecoordsFinal(node)
-						
-					if overlap == "yes":
-						ipltf._plotBeam2D(iNode, jNode, ax, show_element_tags, eleTag, "wire")
-					
-					if monitorElementDisplay == 'yes':
-						if eleTag in MonitorEleTags:
-							eleColor = idbf._elementMonitorCheck(eleTag, dof, monitorOutput, limitStates, ipltf.limStateColors, MonitorEleInfo, MonitorEleTags, MonitorEleDef, jj)
-							ipltf._plotBeam2D(iNode_final, jNode_final, ax, show_element_tags, eleTag, eleColor)
-						else:
-							ipltf._plotBeam2D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-					else:
-						ipltf._plotBeam2D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-					
-				if len(Nodes) == 3:
-					## 2D Planer three-node shell elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					kNode_final = nodecoordsFinal(Nodes[2])
-
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,0:1] = nodecoordsFinal(node)
-								
-					if overlap == "yes":
-						ipltf._plotTri2D(iNode, jNode, kNode, iNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-					
-					ipltf._plotTri2D(iNode_final, jNode_final, kNode_final, iNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-					
-				if len(Nodes) == 4:
-					## 2D four-node Quad/shell element
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					kNode_final = nodecoordsFinal(Nodes[2])
-					lNode_final = nodecoordsFinal(Nodes[3])
-					
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,0:1] = nodecoordsFinal(node)
-								
-					if overlap == "yes":
-						ipltf._plotQuad2D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-						
-					ipltf._plotQuad2D(iNode_final, jNode_final, kNode_final, lNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-				
-				adjNodeNum+=1
-	            
-			ax.text(0.1, 0.90, printLine, transform=ax.transAxes)
-			
-			if monitorElementDisplay == 'yes':
-				for ls in range(0,4):
-					ax.text(0.1+ ls*0.1, 0.05, 'DS'+str(ls+1), color=ipltf.limStateColors[ls], bbox=dict(facecolor='none', edgecolor=ipltf.limStateColors[ls]), transform=ax.transAxes)
-					
-		else:
-			print('3D model')
-			fig = plt.figure()
-			ax = fig.add_subplot(1,1,1, projection='3d')
-			
-			if adjustViewport == "yes":
-				adjusted_NodeArray = np.zeros([len(nodeArray),3])   #  array
-				print(np.shape(adjusted_NodeArray))
-			
-			for ele in elementArray:
-				eleTag = int(ele[0])
-				Nodes =ele[1:]
-				
-				if len(Nodes) == 2:
-					## 3D beam-column elements
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,:] = nodecoordsFinal(node)
-								
-					if overlap == "yes":
-						ipltf._plotBeam3D(iNode, jNode, ax, show_element_tags, eleTag, "wire")
-					if monitorElementDisplay == 'yes':
-						if eleTag in MonitorEleTags:
-							eleColor = idbf._elementMonitorCheck(eleTag, dof, monitorOutput, limitStates, ipltf.limStateColors, MonitorEleInfo, MonitorEleTags, MonitorEleDef, jj)
-							ipltf._plotBeam3D(iNode_final, jNode_final, ax, show_element_tags, eleTag, eleColor)
-						else:
-							ipltf._plotBeam3D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-					else:
-						ipltf._plotBeam3D(iNode_final, jNode_final, ax, show_element_tags, eleTag, "solid")
-					
-				if len(Nodes) == 4:
-					## 3D four-node Quad/shell element
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					kNode_final = nodecoordsFinal(Nodes[2])
-					lNode_final = nodecoordsFinal(Nodes[3])
-					
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,0:2] = nodecoordsFinal(node)
-								
-					if overlap == "yes":
-						ipltf._plotQuad3D(iNode, jNode, kNode, lNode, ax, show_element_tags, eleTag, "wire", fillSurface='no')
-						
-					ipltf._plotQuad3D(iNode_final, jNode_final, kNode_final, lNode_final, ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-
-				if len(Nodes) == 8:
-					## 3D eight-node Brick element
-					## Nodes in CCW on bottom (0-3) and top (4-7) faces resp
-					iNode = nodecoords(Nodes[0])
-					jNode = nodecoords(Nodes[1])
-					kNode = nodecoords(Nodes[2])
-					lNode = nodecoords(Nodes[3])
-					iiNode = nodecoords(Nodes[4])
-					jjNode = nodecoords(Nodes[5])
-					kkNode = nodecoords(Nodes[6])
-					llNode = nodecoords(Nodes[7])
-					
-					iNode_final = nodecoordsFinal(Nodes[0])
-					jNode_final = nodecoordsFinal(Nodes[1])
-					kNode_final = nodecoordsFinal(Nodes[2])
-					lNode_final = nodecoordsFinal(Nodes[3])
-					iiNode_final = nodecoordsFinal(Nodes[4])
-					jjNode_final = nodecoordsFinal(Nodes[5])
-					kkNode_final = nodecoordsFinal(Nodes[6])
-					llNode_final = nodecoordsFinal(Nodes[7])
-					
-					if adjustViewport == "yes":
-						for node in Nodes:
-							if node not in adjusted_NodeArray[:,0]:
-								adjusted_NodeArray[adjNodeNum,0:2] = nodecoordsFinal(node)
-								
-					if overlap == "yes":
-						ipltf._plotCubeVol(iNode, jNode, kNode, lNode, iiNode, jjNode, kkNode, llNode, ax, show_element_tags, eleTag, "wire", fillSurface='no') # plot undeformed shape
-
-					ipltf._plotCubeVol(iNode_final, jNode_final, kNode_final, lNode_final, iiNode_final, jjNode_final, kkNode_final, llNode_final, 
-									ax, show_element_tags, eleTag, "solid", fillSurface='yes')
-					
-				adjNodeNum+=1
-				
-			ax.text2D(0.1, 0.90, printLine, transform=ax.transAxes)
-			
-			if monitorElementDisplay == 'yes':
-				for ls in range(0,4):
-					ax.text2D(0.1+ ls*0.1, 0.05, 'DS'+str(ls+1), color=ipltf.limStateColors[ls], bbox=dict(facecolor='none', edgecolor=ipltf.limStateColors[ls]), transform=ax.transAxes)
-					
-		if adjustViewport == "yes":
-			DeflectedNodeCoordArray = adjusted_NodeArray[0:adjNodeNum-1,:]
-		
-		ipltf._setStandardViewport(fig, ax, DeflectedNodeCoordArray, len(nodecoords(nodetags[0])))					
-		plt.axis('on')
-		plt.show()
-		
-		return fig, ax
 
 
-def animate_deformedshape( Model = 'none', LoadCase = 'none', dt = 0, tStart = 0, tEnd = 0, scale = 10, fps = 24, 
-                          FrameInterval = 0, timeScale = 1, Movie='none'):
-    """
-    This defines the animation of an opensees model, given input data.
-    
-    For big models it's unlikely that the animation will actually run at the 
-    desired fps in "real time". Matplotlib just isn't built for high fps 
-    animation.
-    Parameters
-    ----------
-    Model : string
-        The name of the input model database.    
-    LoadCase : string
-        The name of the input loadcase.    
-    dt : 1D array
-        The time step between frames in the input file. The input file should
-        have approximately the same number of time between each step or the
-        animation will appear to speed up or slow down.
-    tStart: float, optional
-        The start time for animation. It can be approximate value and the program 
-        will find the closest matching time step.
-    tEnd: float, optional
-        The end time for animation. It can be approximate value and the program 
-        will find the closest matching time step.
-    NodeFileName : Str
-        Name of the input node information file.
-    ElementFileName : Str
-        Name of the input element connectivity file.
-    scale :  float, optional
-        The scale on the xy/xyz displacements. The default is 1.
-    fps : TYPE, optional
-        The frames per second to be displayed. These values are dubious at best
-        The default is 24.
-    FrameInterval : float, optional
-        The time interval between frames to be used. The default is 0.
-    timeScale : TYPE, optional
-        DESCRIPTION. The default is 1.
-    Movie : str, optional 
-        Name of the movie file if the user wants to save the animation as .mp4 file.
-    Returns
-    -------
-    TYPE
-        Earthquake animation.
-    """
-    
-    if (Model == 'none') or ( LoadCase == 'none') or ( dt == 0):
-        raise Exception('Invalid inputs given. Please specify a model database, a load case, and a timestep')
-    
-    
-    # Read Disp From ODB
-    #TODO error handeling?
-    time, Disp = idbf._readNodeDispData(Model,LoadCase)
-    
-    nodes, elements, eleClassTags = idbf._readNodesandElements(Model)
-    Disp = Disp*scale
-    
-    # Reshape array
-    Ntime = len(Disp[:,0])
-    ndm = len(nodes[0,1:])
-    Nnodes = int((len(Disp[0,:]))/ndm)
-    
-    # Get nodes and elements
-    ndm = len(nodes[0,1:])
-    Nnodes = len(nodes[:,0])
-    Nele = len(elements)
-    
-    nodeLabels = nodes[:, 0]       
-
-    # initialize figure
-    fig, ax = ipltf._initializeFig(nodes[:,1:], ndm, Disp)    
-    plt.subplots_adjust(bottom=.15) # Add extra space bellow graph
-    
-	# Adjust plot area.   
-    ipltf._setStandardViewport(fig, ax, nodes[:,1:], ndm, Disp)
-         
-       
-    # ========================================================================
-    # Initialize Plots
-    # ========================================================================
-    
-    initialDisp = nodes[:, 1:] + Disp[0,:,:]
-    
-    # Add Text
-    if ndm == 2:
-        time_text = ax.text(0.95, 0.01, '', verticalalignment='bottom', 
-                            horizontalalignment='right', transform=ax.transAxes, color='blue')
-        
-        EQObjects = ipltf._plotEle_2D(nodes, elements, initialDisp, fig, ax, show_element_tags = 'no')
-        [EqfigLines, EqfigSurfaces, EqfigText] = EQObjects 
-        EqfigNodes, = ax.plot(Disp[0,:,0],Disp[0,:,1], **node_style_animation)  
-                    
-    if ndm == 3:
-        time_text = ax.text2D(0.95, 0.01, '', verticalalignment='bottom', 
-                            horizontalalignment='right', transform=ax.transAxes, color='blue')
-        EQObjects = ipltf._plotEle_3D(nodes, elements, initialDisp, fig, ax, show_element_tags = 'no')
-        [EqfigLines, EqfigSurfaces, EqfigText] = EQObjects 
-        EqfigNodes, = ax.plot(Disp[0,:,0], Disp[0,:,1], Disp[0,:,2], **node_style_animation)  
 
 
-    print("EqfigNodes", EqfigNodes)  # Test
-	
-    # ========================================================================
-    # Animation
-    # ========================================================================
-   
-    # scale on displacement
-    dtInput  = dt
-    dtFrames  = 1/fps
-    Ntime = len(Disp[:,0])
-    Frames = np.arange(0,Ntime)
-    framesTime = Frames*dt
 
-    # If the interval is zero
-    if FrameInterval == 0:
-        FrameInterval = dtFrames*1000/timeScale
-    else: 
-        pass    
-        
-    FrameStart = Frames[0]
-    FrameEnd = Frames[-1]
-	
-    if tStart != 0:
-        jj = (np.abs(time - tStart)).argmin()
-        FrameStart = Frames[jj]
-	
-    if tEnd != 0:
-        if time[-1] < tEnd:
-            print("XX Warining: tEnd has exceeded maximum analysis time step XX")
-            print("XX tEnd has been set to final analysis time step XX")
-        elif tEnd <= tStart:
-            print("XX Input Warning: tEnd should be greater than tStart XX")
-            print("XX tEnd has been set to final analysis time step XX")
-        else:
-            kk = (np.abs(time - tEnd)).argmin()
-            FrameEnd = Frames[kk]
 
-    aniFrames = FrameEnd-FrameStart  # Number of frames to be animated
-	
-    # Slider Location and size relative to plot
-    # [x, y, xsize, ysize]
-    axSlider = plt.axes([0.25, .03, 0.50, 0.02])
-    plotSlider = Slider(axSlider, 'Time', framesTime[FrameStart], framesTime[FrameEnd], valinit=framesTime[FrameStart])
-    
-    # Animation controls
-    global is_paused
-    is_paused = False # True if user has taken control of the animation   
-    
-    def on_click(event):
-        # Check where the click happened
-        (xm,ym),(xM,yM) = plotSlider.label.clipbox.get_points()
-        if xm < event.x < xM and ym < event.y < yM:
-            # Event happened within the slider, ignore since it is handled in update_slider
-            return
-        else:
-            # Toggle on off based on clicking
-            global is_paused
-            if is_paused == True:
-                is_paused=False
-            elif is_paused == False:
-                is_paused=True
-                
-    def animate2D_slider(Time):
-        """
-        The slider value is liked with the plot - we update the plot by updating
-        the slider.
-        """
-        global is_paused
-        is_paused=True
-        # Convert time to frame
-        TimeStep = (np.abs(framesTime - Time)).argmin()
-               
-        # The current node coordinants in (x,y) or (x,y,z)
-        CurrentNodeCoords =  nodes[:,1:] + Disp[TimeStep,:,:]
-        # Update Plots
-        
-        # update node locations
-        EqfigNodes.set_xdata(CurrentNodeCoords[:,0]) 
-        EqfigNodes.set_ydata(CurrentNodeCoords[:,1])
-           
-        # Get new node mapping
-        # I don't like doing this loop every time - there has to be a faster way
-        xy_labels = {}
-        for jj in range(Nnodes):
-            xy_labels[nodeLabels[jj]] = CurrentNodeCoords[jj,:]
-        
-        # Define the surface
-        SurfCounter = 0
-        
-        # update element locations
-        for jj in range(Nele):
-            # Get the node number for the first and second node connected by the element
-            TempNodes = elements[jj][1:]
-            # This is the xy coordinates of each node in the group
-            TempNodeCoords = [xy_labels[node] for node in TempNodes] 
-            coords_x = [xy[0] for xy in TempNodeCoords]
-            coords_y = [xy[1] for xy in TempNodeCoords]
-            
-            # Update element lines    
-            EqfigLines[jj].set_xdata(coords_x)
-            EqfigLines[jj].set_ydata(coords_y)
-            # print('loop start')
-            # Update the surface if necessary
-            if 2 < len(TempNodes):
-                tempxy = np.column_stack([coords_x, coords_y])
-                EqfigSurfaces[SurfCounter].xy = tempxy
-                SurfCounter += 1
-       
-        # update time Text
-        # time_text.set_text("Time= "+'%.2f' % time[TimeStep]+ " s")
-        
-        # redraw canvas while idle
-        fig.canvas.draw_idle()    
-            
-        return EqfigNodes, EqfigLines, EqfigSurfaces, EqfigText
 
-    def animate3D_slider(Time):
-        
-        
-        global is_paused
-        is_paused=True
-        TimeStep = (np.abs(framesTime - Time)).argmin()
-        
-        # this is the most performance critical area of code
-        
-        # The current node coordinants in (x,y) or (x,y,z)
-        CurrentNodeCoords =  nodes[:,1:] + Disp[TimeStep,:,:]
-        # Update Plots
-        
-        # update node locations
-        EqfigNodes.set_data_3d(CurrentNodeCoords[:,0], CurrentNodeCoords[:,1], CurrentNodeCoords[:,2])
-               
-        # Get new node mapping
-        # I don't like doing this loop every time - there has to be a faster way
-        xyz_labels = {}
-        for jj in range(Nnodes):
-            xyz_labels[nodeLabels[jj]] = CurrentNodeCoords[jj,:]        
-    
-        SurfCounter = 0
-            
-        # update element locations
-        for jj in range(Nele):
-            # Get the node number for the first and second node connected by the element
-            TempNodes = elements[jj][1:]
-            # This is the xy coordinates of each node in the group
-            TempNodeCoords = [xyz_labels[node] for node in TempNodes] 
-            coords_x = [xyz[0] for xyz in TempNodeCoords]
-            coords_y = [xyz[1] for xyz in TempNodeCoords]
-            coords_z = [xyz[2] for xyz in TempNodeCoords]
-            
-            # Update element Plot    
-            EqfigLines[jj].set_data_3d(coords_x, coords_y, coords_z)
-            
-            if len(TempNodes) > 2:
-                # Update 3D surfaces
-                tempVec = np.zeros([4,4])
-                tempVec[0,:] = coords_x
-                tempVec[1,:] = coords_y
-                tempVec[2,:] = coords_z
-                tempVec[3,:] = EqfigSurfaces[SurfCounter]._vec[3,:]
-                EqfigSurfaces[SurfCounter]._vec = tempVec
-                SurfCounter += 1
-                
-        # update time Text
-        # time_text.set_text("Time= "+'%.3f' % time[TimeStep]+ " s")
-        
-        # redraw canvas while idle
-        fig.canvas.draw_idle()   
 
-        return EqfigNodes, EqfigLines, EqfigSurfaces, EqfigText
-
-    def update_plot(ii):
-        # If the control is manual, we don't change the plot    
-        global is_paused
-        if is_paused:
-            return EqfigNodes, EqfigLines, EqfigSurfaces, EqfigText
-       
-        # Find the close timeStep and plot that
-        CurrentTime = plotSlider.val
-        CurrentFrame = (np.abs(framesTime - CurrentTime)).argmin()
-
-        CurrentFrame += 1
-        if CurrentFrame >= FrameEnd:
-            CurrentFrame = FrameStart
-        
-        # Update the slider
-        plotSlider.set_val(framesTime[CurrentFrame])
-        
-        is_paused = False # the above line called update_slider, so we need to reset this
-        return EqfigNodes, EqfigLines, EqfigSurfaces, EqfigText
-
-    if ndm == 2:
-        plotSlider.on_changed(animate2D_slider)
-    elif ndm == 3:
-        plotSlider.on_changed(animate3D_slider)
-    
-    # assign click control
-    fig.canvas.mpl_connect('button_press_event', on_click)
-
-    ani = animation.FuncAnimation(fig, update_plot, aniFrames, interval = FrameInterval)
-	
-    if Movie != "none":
-        MovefileName = Movie + '.mp4'
-        ODBdir = Model+"_ODB"		# ODB Dir name
-        Movfile = os.path.join(ODBdir, LoadCase, MovefileName)
-        print("Saving the animation movie as "+MovefileName+" in "+ODBdir+"->"+LoadCase+" folder")
-        ani.save(Movfile, writer='ffmpeg')
-
-    plt.show()
-    return ani
 
 
 def plot_fiberResponse2D(Model, LoadCase, element, section, LocalAxis = 'y', InputType = 'stress', tstep = -1):

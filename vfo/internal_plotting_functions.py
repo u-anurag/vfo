@@ -19,6 +19,8 @@ Eig_style = {'color':'red', 'linewidth':1, 'linestyle':'-'} # elements
 
 limStateColors = ["blue","green","orange","red"]
 
+
+	
 def _plotCubeSurf(nodeCords, ax, fillSurface, eleStyle):
 	## This procedure is called by the plotCubeVol() command
 	aNode = nodeCords[0]
@@ -577,62 +579,3 @@ def _setStandardViewport(fig, ax, nodeCords, ndm, Disp = np.array([])):
         ax.set_zlabel('Z')
 	   
     return fig, ax
-
-# =============================================================================
-# Fiber Helpers
-# =============================================================================
-
-def _getAxisInfo(LocalAxis):
-   
-    if LocalAxis == 'z':
-        axisIndex = 1
-        axisXlabel = "Local z value"
-    if LocalAxis == 'y':
-        axisIndex = 0
-        axisXlabel = "Local y value"
-
-    return axisIndex, axisXlabel
-
-
-def _getResponseInfo(InputType):
-    if InputType == 'stress':
-        responseIndex = 3
-        axisYlabel = "Fiber Stress"
-    if InputType == 'strain':
-        responseIndex = 4
-        axisYlabel = "Fiber Strain"
-        
-    return responseIndex, axisYlabel
-
-
-
-def _getFiberBounds(fibrePositionSorted, fibreResponseSorted, Xbound, Ybound):
-    # Set up bounds based on data from 
-    if Xbound == []:
-        xmin = 1.1*np.min(fibrePositionSorted)
-        xmax = 1.1*np.max(fibrePositionSorted)
-    else:
-        xmin = Xbound[0]       
-        xmax = Xbound[1]
-    
-    if Ybound == []:
-        ymin = 1.1*np.min(fibreResponseSorted)  
-        ymax = 1.1*np.max(fibreResponseSorted)        
-    else:
-        ymin = Ybound[0]       
-        ymax = Ybound[1]  
-
-    return xmin, xmax, ymin, ymax
-
-
-
-def _skipFiberData(fibrePositionSorted, fibreResponseSorted, fiberYPosition,  skipStart, skipEnd):
-    # If end data is not being skipped, use the full vector length.
-    if skipEnd ==0:
-        skipEnd = len(fiberYPosition)   
-        
-    # Remove unecessary data
-    xinputs = fibrePositionSorted[skipStart:skipEnd, :]
-    yinputs = fibreResponseSorted[skipStart:skipEnd, :]
-
-    return xinputs, yinputs
