@@ -210,7 +210,9 @@ def _readNodesandElements(ModelName):
 	try:
 		eleClassTags = np.loadtxt(eleClassTagsFile, dtype, delimiter = delim, unpack=False)
 	except:
-		print("No element class tag information was found")
+		print("Reading element ClassTag data from a OpenSees Tcl model")
+		eleClassTags = np.loadtxt(eleClassTagsFile, dtype=float, delimiter=None, unpack=False)
+		# print(eleClassTags)
 	
 	# Check if any files were read
 	if elements is []:
