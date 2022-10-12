@@ -764,7 +764,7 @@ def plot_modeshape(model="none",modenumber=1,scale=10,overlap="yes",contour="non
 		nodeArray = this_nodeArray
 		
 	pl = pv.Plotter()		
-	# pl.show(interactive_update=True)
+	pl.show(interactive_update=True)
 	
 	
 	# DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*displacement_nodeArray[jj,:,:]
