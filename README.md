@@ -2,7 +2,7 @@
 # vfo (Visualization For OpenSees)
 ***
  
-![vfo](https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png)
+![vfo](https://github.com/u-anurag/vfo/blob/main/Doc/vfo_logo.png)
   
   
 ***
@@ -26,6 +26,8 @@ The following elements are supported:
 - 2D and 3D Tri Elements 
 - 8 Node Brick Elements 
 - Tetrahedron Elements
+
+![vfo](https://github.com/u-anurag/vfo/blob/main/Doc/Shell_and_Brick3D.png)
 
 ****
 Install this package with,
