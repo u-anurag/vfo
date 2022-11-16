@@ -892,7 +892,7 @@ def animate_deformedshape(model="none",loadcase="none",scale=10,speedup=1,overla
         
 	print("Reading loadcase '"+loadcase+"' data from "+model+"_ODB.")
 	try:
-		timeSteps, displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+		timeSteps, this_displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
 		# print('timeSteps')
 		# print(np.shape(displacement_nodeArray[0,:,:]))
 	except:
@@ -901,12 +901,19 @@ def animate_deformedshape(model="none",loadcase="none",scale=10,speedup=1,overla
 	
 	## Check if the model is 2D or 3D
 	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	displacement_nodeArray = np.zeros([np.shape(this_displacement_nodeArray)[0],np.shape(this_displacement_nodeArray)[1], 3])
 	ndm = len(this_nodeArray[0,:]) -1
 	if ndm == 2:
 		for ii in range(0,len(this_nodeArray[:,0])):
 			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+			
+		for ii in range(0,np.shape(this_displacement_nodeArray)[0]):
+			for jj in range(0,np.shape(this_displacement_nodeArray)[1]):
+				# print("this_displacement_nodeArray ", this_displacement_nodeArray[ii,jj,:])
+				displacement_nodeArray[ii,jj,0:2] = this_displacement_nodeArray[ii,jj,:]
 	else:
 		nodeArray = this_nodeArray
+		displacement_nodeArray = this_displacement_nodeArray
 		
 		
 
