@@ -594,12 +594,19 @@ def plot_deformedshape(model="none",loadcase="none",scale=10,tstep=-1,overlap="n
 		raise Exception(">>>> VFO ERROR: No Model_ODB found. No active model found. Exiting 'plot_modeshape()' now.<<<<")
         
 	print("Reading loadcase '"+loadcase+"' data from "+model+"_ODB.")
+	
+    
+	# timeSteps, this_displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+
+
 	try:
-		timeSteps, this_displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
-		# print('timeSteps')
-		# print(np.shape(displacement_nodeArray[0,:,:]))
+		timeSteps, this_displacement_nodeArray, singleStep = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+		# print('timeSteps = ', timeSteps)
+		# print(np.shape(this_displacement_nodeArray[0,:,:]))
+		# print("this_displacement_nodeArray = ", this_displacement_nodeArray)
+		# print(this_displacement_nodeArray[0,:,:])
 	except:
-		raise Exception(">>>> VFO ERROR: No node displacements from loadcase was found in "+model+"_ODB. Exiting 'plot_modeshape()' now. <<<<")
+		raise Exception(">>>> VFO ERROR: No node displacements from loadcase was found in "+model+"_ODB. Exiting 'plot_deformedshape()' now. <<<<")
 		
 	## Check if the model is 2D or 3D
 	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
@@ -617,24 +624,34 @@ def plot_deformedshape(model="none",loadcase="none",scale=10,tstep=-1,overlap="n
 		nodeArray = this_nodeArray
 		displacement_nodeArray = this_displacement_nodeArray
 		
+	# print("displacement_nodeArray = ", displacement_nodeArray)
+	
 	pl = pv.Plotter()		
 	pl.show(interactive_update=True)
 
+
+	if tstep == -1:
+		jjj = len(timeSteps)-1    #  May 20, 2023    len(timeSteps)-1
+		print("Final deformed shape")
+	else:
+		jjj = (np.abs(timeSteps - tstep)).argmin()			# index closest to the time step requested.
+		print("Deformation at time: " + str(round(timeSteps[jjj], 2)))
+				
+				
+				
 	def _get_deformed_mesh(tstep):
 	
 		if tstep == -1:
-			jj = len(timeSteps)-1
+			jj = len(timeSteps)-1    #  May 2    len(timeSteps)-1
 			printLine = "Final deformed shape"
 		else:
 			jj = (np.abs(timeSteps - tstep)).argmin()			# index closest to the time step requested.
 			if timeSteps[-1] < tstep:
 				print(">>> VFO Warning: plot_deformedshape: Time-Step has exceeded maximum analysis time step. <<<")
 			printLine = "Deformation at time: " + str(round(timeSteps[jj], 2))
-				
+						
 		DeflectedNodeCoordArray = nodeArray[:,1:]+ scale*displacement_nodeArray[jj,:,:]
-		# print("DeflectedNodeCoordArray shape ", np.shape(DeflectedNodeCoordArray))
-		# print("nodeArray[:,0] shape ", np.shape(nodeArray[:,0].reshape(len(nodeArray[:,0]),1)))
-	  
+		
 		DeflectedNodeArray = np.hstack((nodeArray[:,0].reshape(len(nodeArray[:,0]),1),DeflectedNodeCoordArray))
 		
 		mesh_deflected, mesh_lines_deflected, vertices, nodeTags = _get_modelDisplay(DeflectedNodeArray, elementArray, eleClassTags)
@@ -686,8 +703,11 @@ def plot_deformedshape(model="none",loadcase="none",scale=10,tstep=-1,overlap="n
 
 	pl.add_text('VFO - Visualization for OpenSees', position='lower_left', color='green', font_size=6)
 	
-	slider = pl.add_slider_widget(_get_deformed_mesh, [0, timeSteps[-1]], title="time steps", title_opacity=0.5, title_color="red", fmt="%0.9f", title_height=0.008,)
-	
+	if singleStep is False:
+		slider = pl.add_slider_widget(_get_deformed_mesh, [0, timeSteps[-1]], value=timeSteps[jjj], title="time steps", title_opacity=0.5, title_color="red", fmt="%0.2f", title_height=0.008,)
+	else:
+		_get_deformed_mesh(-1)
+		
 	if filename is not None:
 		pl.screenshot(filename+".png") 
 	
@@ -892,7 +912,7 @@ def animate_deformedshape(model="none",loadcase="none",scale=10,speedup=1,overla
         
 	print("Reading loadcase '"+loadcase+"' data from "+model+"_ODB.")
 	try:
-		timeSteps, this_displacement_nodeArray = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
+		timeSteps, this_displacement_nodeArray, singleStep = idbf._readNodeDispData(model,loadcase) ## Add eleClassTags to the Tcl data
 		# print('timeSteps')
 		# print(np.shape(displacement_nodeArray[0,:,:]))
 	except:
