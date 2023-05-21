@@ -323,10 +323,24 @@ def _readNodeDispData(ModelName,LoadCaseName):
 	
 	NodeDispFile = os.path.join(LoadCaseDir,"NodeDisp_All.out")
 	Disp = np.transpose(np.loadtxt(NodeDispFile, dtype=float, delimiter=None, converters=None, unpack=True))
+	# print("shape = ", np.shape(Disp), "& length = ", len(Disp), " Disp = ", Disp)
 	
+	### Check if there is only one step in the analysis
+	singleStep = False   # Default is False
+
+	try :
+		np.shape(Disp)[1]
+	except:
+		# print("numpy array shape error")
+		_thisTempArray = np.zeros(len(Disp))
+		# print("_thisTempArray = ", _thisTempArray)
+		Disp = np.vstack((_thisTempArray, Disp))
+		# print("Disp = ", Disp)
+		singleStep = True
+			
 	timeSteps = Disp[:,0]
 	Ntime = len(Disp[:,0])
-
+	# print(timeSteps)
 	tempDisp = np.zeros([Ntime,Nnodes,ndm])
 	tempDisp[:,:,0] = Disp[:,1::ndm]
 	tempDisp[:,:,1] = Disp[:,2::ndm]
@@ -336,7 +350,7 @@ def _readNodeDispData(ModelName,LoadCaseName):
 		
 	nodes_displacement = tempDisp
 	
-	return timeSteps, nodes_displacement
+	return timeSteps, nodes_displacement, singleStep
 
 
 #### Read fibre data
