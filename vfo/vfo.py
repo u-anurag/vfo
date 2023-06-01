@@ -772,23 +772,28 @@ def plot_modeshape(model="none",modenumber=1,scale=10,overlap="yes",contour="non
 		eigenVal = ops.eigen(modeNumber+1)
 		Tn=4*asin(1.0)/(eigenVal[modeNumber-1])**0.5
 		this_nodeArray, elementArray, eleClassTags = idbf._getNodesandElements()
-		Mode_nodeArray = idbf._getModeShapeData(modeNumber)		# DOES NOT GIVE MODAL PERIOD
+		this_Mode_nodeArray = idbf._getModeShapeData(modeNumber)		# DOES NOT GIVE MODAL PERIOD
 		ops.wipeAnalysis()
 	else:
 		print("Reading modeshape data from "+str(model)+"_ODB")
 		this_nodeArray, elementArray, eleClassTags = idbf._readNodesandElements(model)
-		Mode_nodeArray, Periods = idbf._readModeShapeData(model,modeNumber)
+		this_Mode_nodeArray, Periods = idbf._readModeShapeData(model,modeNumber)
 		Tn = Periods[modeNumber-1]
 				
 
 	## Check if the model is 2D or 3D
 	nodeArray = np.zeros([len(this_nodeArray[:,0]), 4])
+	Mode_nodeArray = np.zeros([len(this_Mode_nodeArray[:,0]), 4])
 	ndm = len(this_nodeArray[0,:]) -1
 	if ndm == 2:
 		for ii in range(0,len(this_nodeArray[:,0])):
 			nodeArray[ii,0:3] = this_nodeArray[ii,:]
+		
+		for ii in range(0,len(this_Mode_nodeArray[:,0])):
+			Mode_nodeArray[ii,0:3] = this_Mode_nodeArray[ii,:]
 	else:
 		nodeArray = this_nodeArray
+		Mode_nodeArray = this_Mode_nodeArray
 		
 	pl = pv.Plotter()		
 	pl.show(interactive_update=True)
