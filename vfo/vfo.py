@@ -26,7 +26,7 @@ import pyvista as pv
 for line in range(0,len(sys.argv)):
     if "ipykernel_launcher.py" in sys.argv[line]:
         # matplotlib.use('nbagg')
-        pv.set_jupyter_backend('panel')
+        pv.set_jupyter_backend('trame')
         break
     else:
         pass
