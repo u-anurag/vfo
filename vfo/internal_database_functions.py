@@ -92,7 +92,7 @@ def _saveNodesandElements(ModelName):
 	eleName = 'Elements'
 	eleClassName = 'EleClassTags'
 	delim = ' '
-	fmt = '%.5e'
+	fmt = '%.10e'
 	ftype = '.out'
     
 	ODBdir = ModelName+"_ODB"		# ODB Dir name
@@ -266,7 +266,7 @@ def _saveModeShapeData(ModelName,modeNumber):
 	# Consider making these optional arguements
 	modeName = "ModeShape"
 	delim = ' '
-	fmt = '%.5e'
+	fmt = '%.10e'
 	ftype = '.out'
     
 	ODBdir = ModelName+"_ODB"		# ODB Dir name
@@ -282,7 +282,7 @@ def _readModeShapeData(ModelName,modeNumber):
 	# Consider making these optional arguements
 	modeName = "ModeShape"
 	delim = ' '
-	fmt = '%.5e'
+	fmt = '%.10e'
 	dtype ='float32'
 	ftype = '.out'
         
@@ -360,7 +360,7 @@ def _readFiberData2D(ModelName, LoadCaseName, eleNumber, sectionNumber):
 	# Consider making these optional arguements
 	FibreName = "FiberData"
 	delim = ' '
-	# fmt = '%.5e'
+	# fmt = '%.10e'
 	dtype ='float32'
 	ftype = '.out'    
     
@@ -429,8 +429,8 @@ def _saveMonitorElementData(monitorEleType, monitorOutput, GroupMonitorDir, moni
 			MonitorInfoFile = os.path.join(GroupMonitorDir,"MonitorGroup_Info_Deformation.out")
 		ops.recorder('Element', '-file', MonitorDefFile,  '-time', '-dT', deltaT, '-ele', *monitorEleTags, '-dof',*dofList_ele, monitorOutput) # Two node link element needs dofs input to record
 		ops.recorder('Element', '-file', MonitorForceFile,  '-time', '-dT', deltaT, '-ele', *monitorEleTags, '-dof',*dofList_ele, 'localForce') # 6 columns for each column
-		np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.5e')			# This file will be read by plotting functions
-		np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.5e')			# This file will be read by plotting functions
+		np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.10e')			# This file will be read by plotting functions
+		np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.10e')			# This file will be read by plotting functions
 
 	elif monitorEleType in ["forceBeamColumn","beamWithHinges","dispBeamColumn","nonlinearBeamColumn"]:
 		if monitorOutput in ["chordRotation", "chordDeformations"]:
@@ -443,8 +443,8 @@ def _saveMonitorElementData(monitorEleType, monitorOutput, GroupMonitorDir, moni
 			MonitorEleFile = os.path.join(GroupMonitorDir,"MonitorGroup_Tags_Rotation.out")
 			MonitorInfoFile = os.path.join(GroupMonitorDir,"MonitorGroup_Info_Rotation.out")
 			ops.recorder('Element', '-file', MonitorDefFile,  '-time', '-dT', deltaT, '-ele', *monitorEleTags, monitorOutput)  # Records chord output
-			np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.5e')			# This file will be read by plotting functions
-			np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.5e')			# This file will record number of outputs 
+			np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.10e')			# This file will be read by plotting functions
+			np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.10e')			# This file will record number of outputs 
 		elif monitorOutput == "deformation" or monitorOutput=="deformations":
 			"""
 			3D ELements: AxialStrain, CurvY, CurvZ, TorsionStrain
@@ -457,8 +457,8 @@ def _saveMonitorElementData(monitorEleType, monitorOutput, GroupMonitorDir, moni
 			for SectionNum in range(1,numSections+1):
 				MonitorDefFile = os.path.join(GroupMonitorDir,"MonitorGroup_Deformation_section"+str(SectionNum)+".out")
 				ops.recorder('Element', '-file', MonitorDefFile,  '-time', '-dT', deltaT, '-ele', *monitorEleTags, 'section',str(SectionNum), monitorOutput)  # Records chord output
-			np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.5e')			# This file will be read by plotting functions
-			np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.5e')			# This file will record number of outputs 
+			np.savetxt(MonitorEleFile, monitorGroupArray, delimiter = ' ', fmt = '%.10e')			# This file will be read by plotting functions
+			np.savetxt(MonitorInfoFile, np.asarray(dofList_ele), delimiter = ' ', fmt = '%.10e')			# This file will record number of outputs 
 		else:
 		#### FUTURE: Add recorder for nonlinear beam column element sections; hinge rotation for beam with hinges
 			pass
